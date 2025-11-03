@@ -51,7 +51,7 @@ const getInitialState = (): TimerState => {
 export function TimerProvider({ children }: { children: ReactNode }) {
   const [settings] = useSettings();
   const [state, setState] = useState<TimerState>(getInitialState());
-  const [isTimerVisible, setIsTimerVisible] = useState(false);
+  const [isTimerVisible, setIsTimerVisible] = useState<boolean>(() => getItem('isTimerVisible', false));
   const [timeLeft, setTimeLeft] = useState(0);
 
   const getTimerDuration = useCallback(() => {
@@ -69,6 +69,10 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setItem('timerState', state);
   }, [state]);
+
+  useEffect(() => {
+    setItem('isTimerVisible', isTimerVisible);
+  }, [isTimerVisible]);
 
   // Main timer logic
   useEffect(() => {

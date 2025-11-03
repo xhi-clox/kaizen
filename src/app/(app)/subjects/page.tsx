@@ -51,7 +51,7 @@ import {
 } from '@/components/ui/select';
 import { useSubjects, useProgress } from '@/hooks/use-app-data';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { BookCopy, Edit, PlusCircle, Trash2, Languages } from 'lucide-react';
+import { BookCopy, Edit, PlusCircle, Trash2, Languages, BrainCircuit } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -59,16 +59,20 @@ import { z } from 'zod';
 
 import type { Subject, Chapter, Topic, UserProgress } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { generateAndSeedSyllabus } from '@/ai/flows/generate-syllabus-flow';
+import { useToast } from '@/hooks/use-toast';
 
 const chapterSchema = z.object({
   name: z.string().min(1, 'Chapter name is required.'),
 });
 
 function ChapterForm({
+  subjectId,
   onSave,
   chapter,
 }: {
-  onSave: (data: z.infer<typeof chapterSchema>) => void;
+  subjectId: string;
+  onSave: (subjectId: string, chapter: Chapter) => void;
   chapter?: Chapter;
 }) {
   const [open, setOpen] = useState(false);
@@ -79,7 +83,10 @@ function ChapterForm({
   });
 
   const onSubmit = (data: z.infer<typeof chapterSchema>) => {
-    onSave(data);
+    const chapterData: Chapter = chapter
+      ? { ...chapter, name: data.name }
+      : { id: nanoid(), name: data.name, topics: [] };
+    onSave(subjectId, chapterData);
     setOpen(false);
     form.reset();
   };
@@ -121,6 +128,7 @@ function ChapterForm({
     </Dialog>
   );
 }
+
 
 const topicFormSchema = z.object({
   name: z.string().min(1, 'Topic name cannot be empty.'),
@@ -217,9 +225,12 @@ function TopicItem({
 
 export default function SubjectsPage() {
   const [subjects, { update: updateSubject }, loadingSubjects] = useSubjects();
-  const [progress, setProgress, loadingProgress] = useProgress();
+  const [progress, setProgress] = useProgress();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
 
   const subjectsWithProgress = useMemo(() => {
+    if (!subjects) return [];
     return subjects
     .sort((a, b) => (a as any).order - (b as any).order)
     .map((subject) => {
@@ -238,18 +249,13 @@ export default function SubjectsPage() {
   const handleUpdateChapter = (subjectId: string, updatedChapter: Chapter) => {
     const subject = subjects.find(s => s.id === subjectId);
     if (!subject) return;
-    const updatedChapters = subject.chapters.map(c => c.id === updatedChapter.id ? updatedChapter : c);
-    updateSubject(subjectId, { chapters: updatedChapters });
-  };
-  
-  const handleAddChapter = (subjectId: string, chapterName: string) => {
-    const subject = subjects.find(s => s.id === subjectId);
-    if (!subject) return;
-    const newChapter: Chapter = { id: nanoid(), name: chapterName, topics: [] };
-    const updatedChapters = [...subject.chapters, newChapter];
+    const isNew = !subject.chapters.some(c => c.id === updatedChapter.id);
+    const updatedChapters = isNew 
+      ? [...subject.chapters, updatedChapter]
+      : subject.chapters.map(c => c.id === updatedChapter.id ? updatedChapter : c);
     updateSubject(subjectId, { chapters: updatedChapters, totalChapters: updatedChapters.length });
   };
-
+  
   const handleDeleteChapter = (subjectId: string, chapterId: string) => {
     const subject = subjects.find(s => s.id === subjectId);
     if (!subject) return;
@@ -296,6 +302,32 @@ export default function SubjectsPage() {
     setProgress({ ...progress, [topicId]: newProgress });
   }
 
+  const handleSeedSyllabus = async () => {
+    setIsGenerating(true);
+    toast({
+      title: "Generating Syllabus...",
+      description: "This may take a minute. The page will reload when complete.",
+    });
+    try {
+      const { subjectCount } = await generateAndSeedSyllabus();
+      toast({
+        title: "Syllabus Seeded!",
+        description: `${subjectCount} subjects have been loaded into the database.`,
+      });
+      window.location.reload(); // Reload to get the new data
+    } catch(error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Error Seeding Syllabus",
+        description: "Could not generate syllabus. Please check the console and try again.",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+
   if (loadingSubjects) {
     return (
         <div className="space-y-6">
@@ -322,7 +354,11 @@ export default function SubjectsPage() {
                 <div className="flex flex-col items-center justify-center gap-4 text-center py-10 border-2 border-dashed rounded-lg">
                     <BookCopy className="w-12 h-12 text-muted-foreground" />
                     <p className="text-muted-foreground">The syllabus has not been loaded into the database.</p>
-                    <p className="text-sm text-muted-foreground">Please ask your administrator to seed the syllabus.</p>
+                    <p className="text-sm text-muted-foreground">Click the button below to generate it with AI.</p>
+                    <Button onClick={handleSeedSyllabus} disabled={isGenerating}>
+                        <BrainCircuit className="mr-2 h-4 w-4" />
+                        {isGenerating ? 'Generating...' : 'Seed Syllabus from AI'}
+                    </Button>
                 </div>
             </CardContent>
         </Card>
@@ -370,7 +406,7 @@ export default function SubjectsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="p-4 pt-0">
                     <div className="p-2 flex justify-end gap-2 border-b mb-2">
-                       <ChapterForm onSave={(data) => handleAddChapter(subject.id, data.name)} />
+                       <ChapterForm subjectId={subject.id} onSave={handleUpdateChapter} />
                     </div>
                     <div className="p-4 pt-0 space-y-2">
                       {(subject.chapters || []).map((chapter) => (
@@ -384,7 +420,7 @@ export default function SubjectsPage() {
                               <AccordionTrigger className="group/chapter-trigger">
                                 <span className="flex-1 text-left">{chapter.name}</span>
                                 <div className="opacity-0 group-hover/chapter-trigger:opacity-100 transition-opacity flex items-center">
-                                  <ChapterForm chapter={chapter} onSave={(data) => handleUpdateChapter(subject.id, {...chapter, name: data.name})} />
+                                  <ChapterForm subjectId={subject.id} chapter={chapter} onSave={handleUpdateChapter} />
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4" /></Button>

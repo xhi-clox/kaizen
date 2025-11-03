@@ -91,7 +91,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-3 flex flex-col gap-6">
           <TodaysGoals />
           <WeeklyGoals />
         </div>

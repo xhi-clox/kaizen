@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useStudySessions, useSubjects } from '@/hooks/use-app-data';
@@ -17,7 +18,7 @@ export function RecentSessions() {
         if (!sessions || !subjects) return [];
         return sessions
             .sort((a, b) => b.date - a.date)
-            .slice(0, 5)
+            .slice(0, 10)
             .map(session => {
                 const subject = subjects.find(s => s.id === session.subjectId);
                 const topic = subject?.chapters.flatMap(c => c.topics).find(t => t.id === session.topicId);
@@ -26,13 +27,13 @@ export function RecentSessions() {
     }, [sessions, subjects]);
 
     return (
-        <Card>
+        <Card className="h-full flex flex-col">
             <CardHeader>
                 <CardTitle>Recent Study Sessions</CardTitle>
                 <CardDescription>A log of your latest study activities.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <ScrollArea className="h-64">
+            <CardContent className="flex-grow">
+                <ScrollArea className="h-full">
                     {recentSessions.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center p-4">
                             <p className="text-muted-foreground">No study sessions logged yet.</p>

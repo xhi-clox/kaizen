@@ -22,9 +22,10 @@ interface TimerState {
     manualDuration: number;
     startTime: number | null; // Timestamp
     elapsedTime: number; // Seconds
+    sessionCompleted: boolean;
 }
 
-interface TimerContextProps extends Omit<TimerState, 'elapsedTime'> {
+interface TimerContextProps extends TimerState {
   timeLeft: number;
   isTimerVisible: boolean;
   setManualDuration: (duration: number) => void;
@@ -35,6 +36,7 @@ interface TimerContextProps extends Omit<TimerState, 'elapsedTime'> {
   endWorkSession: (wasCompleted: boolean) => void;
   setIsTimerVisible: (isVisible: boolean) => void;
   setSessionType: (type: SessionType) => void;
+  clearSessionCompleted: () => void;
 }
 
 const TimerContext = createContext<TimerContextProps | undefined>(undefined);
@@ -49,6 +51,7 @@ const getInitialState = (): TimerState => {
         manualDuration: storedState.manualDuration || defaultWorkDuration,
         startTime: storedState.startTime || null,
         elapsedTime: storedState.elapsedTime || 0,
+        sessionCompleted: false,
     };
 };
 
@@ -71,7 +74,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
 
   // Sync state to localStorage
   useEffect(() => {
-    setItem('timerState', state);
+    const { sessionCompleted, ...stateToSave } = state;
+    setItem('timerState', stateToSave);
   }, [state]);
 
   useEffect(() => {
@@ -84,6 +88,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     
     const calculateTimeLeft = () => {
         if (!state.isActive || !state.startTime) {
+            setTimeLeft(getTimerDuration() - state.elapsedTime);
             return;
         }
         const now = Date.now();
@@ -93,20 +98,16 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         if (remaining <= 0) {
             setTimeLeft(0);
             if (state.isActive) {
-                 // The page itself will handle session end logic, but we stop the timer here
-                setState(s => ({ ...s, isActive: false, startTime: null, elapsedTime: 0 }));
+                setState(s => ({ ...s, isActive: false, startTime: null, elapsedTime: 0, sessionCompleted: true }));
             }
         } else {
             setTimeLeft(remaining);
         }
     };
 
+    calculateTimeLeft();
     if (state.isActive) {
-      calculateTimeLeft(); // Initial calculation
       interval = setInterval(calculateTimeLeft, 1000);
-    } else {
-        const remaining = getTimerDuration() - state.elapsedTime;
-        setTimeLeft(remaining > 0 ? remaining : getTimerDuration());
     }
 
     return () => {
@@ -154,6 +155,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         elapsedTime: 0,
         isActive: false,
         startTime: null,
+        sessionCompleted: false,
     });
     setIsTimerVisible(false);
   };
@@ -199,12 +201,12 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const clearSessionCompleted = () => {
+    setState(s => ({...s, sessionCompleted: false }));
+  }
+
   const value: TimerContextProps = {
-    sessionType: state.sessionType,
-    isActive: state.isActive,
-    sessionCount: state.sessionCount,
-    manualDuration: state.manualDuration,
-    startTime: state.startTime,
+    ...state,
     timeLeft,
     isTimerVisible,
     setIsTimerVisible,
@@ -215,6 +217,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     skipTimer,
     endWorkSession,
     setSessionType,
+    clearSessionCompleted,
   };
 
   return <TimerContext.Provider value={value}>{children}</TimerContext.Provider>;

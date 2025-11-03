@@ -54,6 +54,8 @@ export default function StudySessionPage() {
     endWorkSession,
     setIsTimerVisible,
     setSessionType,
+    sessionCompleted,
+    clearSessionCompleted,
   } = useTimer();
 
   const [subjects] = useSubjects();
@@ -118,12 +120,13 @@ export default function StudySessionPage() {
   }, [sessionType, selectedSubject, selectedTopic, manualDuration, sessionNotes, addSession, toast, subjects, endWorkSession]);
 
 
-  // When timer hits 0, handle the session end logic
+  // When timer hits 0 and sessionCompleted is true, handle the session end logic
   useEffect(() => {
-    if (timeLeft === 0 && isActive) {
+    if (sessionCompleted && timeLeft === 0) {
       handleSessionEnd();
+      clearSessionCompleted();
     }
-  }, [timeLeft, isActive, handleSessionEnd]);
+  }, [sessionCompleted, timeLeft, handleSessionEnd, clearSessionCompleted]);
 
 
   const availableChapters = useMemo(() => {

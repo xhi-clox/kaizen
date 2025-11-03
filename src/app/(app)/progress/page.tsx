@@ -3,11 +3,21 @@
 
 import { useSubjects, useStudySessions, useProgress } from '@/hooks/use-app-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Text } from 'recharts';
 import { useMemo } from 'react';
 import { format, startOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import { Target, Clock, BookOpen } from 'lucide-react';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+
+const CustomYAxisTick = (props: any) => {
+    const { x, y, payload, width } = props;
+    return (
+        <Text x={x} y={y} width={width} textAnchor="end" verticalAnchor="middle" fill="#666" style={{ fontSize: '12px' }}>
+            {payload.value}
+        </Text>
+    );
+};
+
 
 export default function ProgressPage() {
   const [subjects] = useSubjects();
@@ -111,7 +121,14 @@ export default function ProgressPage() {
                 <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 120, right: 30 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} unit="%" />
-                  <YAxis type="category" dataKey="name" width={80} tickLine={false} axisLine={false} />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    width={150} 
+                    tickLine={false} 
+                    axisLine={false}
+                    tick={<CustomYAxisTick />}
+                  />
                   <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
                   <Bar dataKey="progress" background={{ fill: 'hsl(var(--muted))' }} radius={[4, 4, 4, 4]} />
                 </BarChart>

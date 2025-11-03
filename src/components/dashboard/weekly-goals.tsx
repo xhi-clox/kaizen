@@ -83,7 +83,7 @@ export function WeeklyGoals() {
                                 }) : <p className="text-sm text-muted-foreground">No chapter targets set.</p>}
                             </ul>
                         </div>
-                        <div className="space-y-4 text-right">
+                        <div className="space-y-2 text-right">
                              <div>
                                 <h4 className="font-medium text-muted-foreground">Revision</h4>
                                 <p className="text-lg font-bold">{currentWeeklyGoal.revisionHours} hours</p>

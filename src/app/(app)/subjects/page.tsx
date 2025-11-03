@@ -25,7 +25,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -55,7 +54,7 @@ import {
 } from '@/components/ui/select';
 import { useSubjects } from '@/hooks/use-app-data';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { BookCopy, Edit, PlusCircle, Trash2, BrainCircuit } from 'lucide-react';
+import { BookCopy, Edit, PlusCircle, Trash2, BrainCircuit, Languages } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -203,50 +202,89 @@ function SubjectForm({
   );
 }
 
+const topicFormSchema = z.object({
+  name: z.string().min(1, 'Topic name cannot be empty.'),
+});
+
 function TopicItem({
   topic,
-  onUpdate,
+  subjectId,
+  chapterId,
+  onUpdateTopic,
+  onDeleteTopic,
 }: {
   topic: Topic;
-  onUpdate: (topic: Topic) => void;
+  subjectId: string;
+  chapterId: string;
+  onUpdateTopic: (subjectId: string, chapterId: string, topic: Topic) => void;
+  onDeleteTopic: (subjectId: string, chapterId: string, topicId: string) => void;
 }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const form = useForm<z.infer<typeof topicFormSchema>>({
+    resolver: zodResolver(topicFormSchema),
+    defaultValues: { name: topic.name },
+  });
+
+  const handleEditSubmit = (data: z.infer<typeof topicFormSchema>) => {
+    onUpdateTopic(subjectId, chapterId, { ...topic, name: data.name });
+    setIsEditing(false);
+  };
+
   return (
-    <div className="flex items-center space-x-4 rounded-md p-2 hover:bg-muted">
-      <Checkbox
-        id={`topic-${topic.id}`}
-        checked={topic.status === 'completed'}
-        onCheckedChange={(checked) =>
-          onUpdate({
-            ...topic,
-            status: checked ? 'completed' : 'not-started',
-            completedDate: checked ? Date.now() : null,
-          })
-        }
-      />
-      <div className="flex-1">
-        <label
-          htmlFor={`topic-${topic.id}`}
-          className={`text-sm font-medium leading-none ${
-            topic.status === 'completed' ? 'line-through text-muted-foreground' : ''
-          }`}
-        >
-          {topic.name}
-        </label>
-      </div>
-      <Select
-        value={topic.status}
-        onValueChange={(status) => onUpdate({ ...topic, status: status as Topic['status'] })}
-      >
-        <SelectTrigger className="w-[120px] h-8">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="not-started">Not Started</SelectItem>
-          <SelectItem value="in-progress">In Progress</SelectItem>
-          <SelectItem value="completed">Completed</SelectItem>
-          <SelectItem value="revision">Revision</SelectItem>
-        </SelectContent>
-      </Select>
+    <div className="flex items-center space-x-4 rounded-md p-2 hover:bg-muted group">
+      {isEditing ? (
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleEditSubmit)} className="flex-1 flex items-center gap-2">
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem className="flex-1">
+                <FormControl><Input {...field} className="h-8" /></FormControl>
+              </FormItem>
+            )} />
+            <Button type="submit" size="sm">Save</Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
+          </form>
+        </Form>
+      ) : (
+        <>
+          <div className="flex-1">
+            <p className="text-sm font-medium leading-none">{topic.name}</p>
+          </div>
+          <Select
+            value={topic.status}
+            onValueChange={(status) => onUpdateTopic(subjectId, chapterId, { ...topic, status: status as Topic['status'] })}
+          >
+            <SelectTrigger className="w-[120px] h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="not-started">Not Started</SelectItem>
+              <SelectItem value="in-progress">In Progress</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="revision">Revision</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsEditing(true)}><Edit className="h-4 w-4" /></Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Topic?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete the topic "{topic.name}"? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDeleteTopic(subjectId, chapterId, topic.id)}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -331,6 +369,18 @@ export default function SubjectsPage() {
     update(subjectId, { chapters: updatedChapters });
   };
 
+  const handleDeleteTopic = (subjectId: string, chapterId: string, topicId: string) => {
+    const subject = subjects.find(s => s.id === subjectId);
+    if (!subject) return;
+
+    const updatedChapters = subject.chapters.map(c => c.id === chapterId ? {
+        ...c,
+        topics: c.topics.filter(t => t.id !== topicId)
+    } : c);
+
+    update(subjectId, { chapters: updatedChapters });
+  }
+
   const handleGenerateSyllabus = async () => {
     setIsGenerating(true);
     toast({
@@ -339,10 +389,14 @@ export default function SubjectsPage() {
     });
     try {
         const result = await generateSyllabus({ curriculumName: 'NCTB HSC Science Group' });
-        // Clear existing subjects
-        subjects.forEach(s => remove(s.id));
+        
+        // Clear existing subjects before adding new ones
+        await Promise.all(subjects.map(s => remove(s.id)));
+        
         // Add new subjects
-        result.subjects.forEach(subject => add(subject as Omit<Subject, 'id'>));
+        for (const subject of result.subjects) {
+           await add(subject as Omit<Subject, 'id'>);
+        }
 
         toast({
             title: 'Syllabus Generated!',
@@ -361,7 +415,7 @@ export default function SubjectsPage() {
   }
 
 
-  if (subjects.length === 0) {
+  if (subjects.length === 0 && !isGenerating) {
     return (
         <Card>
             <CardHeader>
@@ -392,98 +446,125 @@ export default function SubjectsPage() {
           <p className="text-muted-foreground">Manage your subjects, chapters, and topics to track your progress.</p>
         </div>
         <div className="flex gap-2">
-            <SubjectForm onSave={handleAddSubject} />
-            <Button variant="outline" onClick={handleGenerateSyllabus} disabled={isGenerating}>
-                <BrainCircuit className="mr-2 h-4 w-4" />
-                {isGenerating ? 'Generating...' : 'Generate with AI'}
+            <Button variant="outline" disabled>
+                <Languages className="mr-2 h-4 w-4" />
+                English
             </Button>
+            <SubjectForm onSave={handleAddSubject} />
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="outline" disabled={isGenerating}>
+                        <BrainCircuit className="mr-2 h-4 w-4" />
+                        {isGenerating ? 'Generating...' : 'Generate with AI'}
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Generate Syllabus with AI?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will replace your current syllabus with a new one generated by AI based on the NCTB HSC curriculum. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleGenerateSyllabus}>Generate</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
       </div>
 
+      {isGenerating && subjects.length === 0 && (
+          <div className="text-center py-10">
+            <BrainCircuit className="mx-auto h-12 w-12 animate-pulse text-primary" />
+            <p className="mt-4 text-lg font-semibold">Generating Syllabus...</p>
+            <p className="mt-1 text-sm text-muted-foreground">Please wait while the AI builds your curriculum.</p>
+          </div>
+      )}
+
       <Accordion type="single" collapsible className="w-full space-y-4">
         {subjectsWithProgress.map((subject) => (
-          <AccordionItem value={subject.id} key={subject.id} className="border-b-0 rounded-lg bg-card shadow-sm border">
-            <AccordionTrigger className="w-full p-4 hover:no-underline [&[data-state=open]]:border-b">
-                <div className="flex items-center gap-4 flex-1">
-                <div
-                    className="h-8 w-1.5 rounded-full"
-                    style={{ backgroundColor: subject.color }}
-                ></div>
-                <div className="flex-1 text-left">
-                    <p className="text-xl font-semibold leading-none tracking-tight">{subject.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                    {subject.completedCount} / {subject.topicCount} topics completed
-                    </p>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="text-right">
-                        <span className="font-bold">{subject.progress}%</span>
-                        <Progress value={subject.progress} indicatorColor={subject.color} className="w-24 h-1.5" />
+          <AccordionItem value={subject.id} key={subject.id} className="border-b-0">
+            <Card>
+                <AccordionTrigger className="w-full p-4 hover:no-underline [&[data-state=open]]:border-b">
+                    <div className="flex items-center gap-4 flex-1">
+                    <div
+                        className="h-8 w-1.5 rounded-full"
+                        style={{ backgroundColor: subject.color }}
+                    ></div>
+                    <div className="flex-1 text-left">
+                        <p className="text-xl font-semibold leading-none tracking-tight">{subject.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                        {subject.completedCount} / {subject.topicCount} topics completed
+                        </p>
                     </div>
-                </div>
-                </div>
-            </AccordionTrigger>
-            <AccordionContent className="p-4 pt-0">
-                <div className="p-2 flex justify-end gap-2">
-                    <SubjectForm
-                        subject={subject}
-                        onSave={(data) => handleUpdateSubject(subject.id, data)}
-                    />
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                        </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                            This will permanently delete the subject &quot;{subject.name}&quot; and all its chapters and topics. This action cannot be undone.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>
-                            Delete
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-                <div className="p-4 pt-0 space-y-2">
-                  {subject.chapters.map((chapter) => (
-                      <Accordion
-                      key={chapter.id}
-                      type="single"
-                      collapsible
-                      className="border rounded-md px-4"
-                      >
-                      <AccordionItem value={chapter.id} className="border-b-0">
-                          <AccordionTrigger>
-                          {chapter.name}
-                          </AccordionTrigger>
-                          <AccordionContent className="space-y-2">
-                          {chapter.topics.map((topic) => (
-                              <TopicItem
-                              key={topic.id}
-                              topic={topic}
-                              onUpdate={(updatedTopic) =>
-                                  handleUpdateTopic(
-                                  subject.id,
-                                  chapter.id,
-                                  updatedTopic
-                                  )
-                              }
-                              />
-                          ))}
-                          <AddTopicForm subjectId={subject.id} chapterId={chapter.id} onAddTopic={handleAddTopic} />
-                          </AccordionContent>
-                      </AccordionItem>
-                      </Accordion>
-                  ))}
-                </div>
-            </AccordionContent>
+                    <div className="flex items-center gap-4">
+                        <div className="text-right">
+                            <span className="font-bold">{subject.progress}%</span>
+                            <Progress value={subject.progress} indicatorColor={subject.color} className="w-24 h-1.5" />
+                        </div>
+                    </div>
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent className="p-4 pt-0">
+                    <div className="p-2 flex justify-end gap-2 border-b mb-2">
+                        <SubjectForm
+                            subject={subject}
+                            onSave={(data) => handleUpdateSubject(subject.id, data)}
+                        />
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This will permanently delete the subject &quot;{subject.name}&quot; and all its chapters and topics. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>
+                                Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                    <div className="p-4 pt-0 space-y-2">
+                      {subject.chapters.map((chapter) => (
+                          <Accordion
+                          key={chapter.id}
+                          type="single"
+                          collapsible
+                          className="border rounded-md px-4 bg-muted/50"
+                          >
+                          <AccordionItem value={chapter.id} className="border-b-0">
+                              <AccordionTrigger>
+                              {chapter.name}
+                              </AccordionTrigger>
+                              <AccordionContent className="space-y-2">
+                              {chapter.topics.map((topic) => (
+                                  <TopicItem
+                                  key={topic.id}
+                                  topic={topic}
+                                  subjectId={subject.id}
+                                  chapterId={chapter.id}
+                                  onUpdateTopic={handleUpdateTopic}
+                                  onDeleteTopic={handleDeleteTopic}
+                                  />
+                              ))}
+                              <AddTopicForm subjectId={subject.id} chapterId={chapter.id} onAddTopic={handleAddTopic} />
+                              </AccordionContent>
+                          </AccordionItem>
+                          </Accordion>
+                      ))}
+                    </div>
+                </AccordionContent>
+            </Card>
           </AccordionItem>
         ))}
       </Accordion>

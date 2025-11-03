@@ -32,7 +32,7 @@ const ChapterSchema = z.object({
 });
 
 const SubjectSchema = z.object({
-  name: z.string().describe('The name of the subject.'),
+  name: z.string().describe('The name of the subject, including paper if applicable (e.g., "Physics 1st Paper").'),
   color: z
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)
@@ -84,19 +84,33 @@ const syllabusGenerationPrompt = ai.definePrompt({
   name: 'syllabusGenerationPrompt',
   input: { schema: GenerateSyllabusInputSchema },
   output: { schema: GenerateSyllabusOutputSchema },
-  prompt: `You are an expert on the Bangladesh National Curriculum and Textbook Board (NCTB) syllabus for the Higher Secondary Certificate (HSC) exam.
+  prompt: `You are a definitive expert on the Bangladesh National Curriculum and Textbook Board (NCTB) syllabus for the Higher Secondary Certificate (HSC) for the Science Group. Your knowledge is precise and up-to-date. Mistakes are not acceptable.
 
-Your task is to generate a complete and accurate list of subjects, including all chapters and topics for the specified curriculum: {{{curriculumName}}}.
+Your task is to generate a complete and accurate list of all subjects, including all chapters and topics for the specified curriculum: {{{curriculumName}}}.
 
-For each subject, provide:
-1. A unique, visually distinct hex color code.
-2. The total number of chapters.
-3. A list of all chapters.
-4. For each chapter, provide a list of all topics.
+You MUST include the following 13 subjects, treating 1st and 2nd papers as separate subjects:
+1.  Bangla 1st Paper
+2.  Bangla 2nd Paper
+3.  English 1st Paper
+4.  English 2nd Paper
+5.  Information and Communication Technology (ICT)
+6.  Physics 1st Paper
+7.  Physics 2nd Paper
+8.  Chemistry 1st Paper
+9.  Chemistry 2nd Paper
+10. Higher Math 1st Paper
+11. Higher Math 2nd Paper
+12. Biology 1st Paper
+13. Biology 2nd Paper
 
-Generate the syllabus for the "Science Group". Include Physics, Chemistry, Biology, Higher Math, and ICT as the main subjects.
+For each of the 13 subjects, provide:
+1. The full, correct subject name (e.g., "Physics 1st Paper").
+2. A unique, visually distinct hex color code.
+3. The total number of chapters.
+4. A complete list of all official chapters.
+5. For each chapter, a complete list of all official topics within that chapter.
 
-Return ONLY a JSON object that conforms to the output schema.
+Your response MUST be a JSON object that strictly conforms to the output schema. Do not add any commentary or text outside of the JSON object.
 `,
 });
 

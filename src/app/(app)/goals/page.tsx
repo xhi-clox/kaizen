@@ -1,6 +1,6 @@
 'use client';
 
-import { useGoals, useProfile, useSubjects } from '@/hooks/use-app-data';
+import { useGoals, useProfile, useSubjects, useStudySessions } from '@/hooks/use-app-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -10,12 +10,16 @@ import { Progress } from '@/components/ui/progress';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
-import { Edit, Flag, Target, Trash2 } from 'lucide-react';
+import { Edit, Flag, Target, Trash2, PlusCircle, CheckCircle, Calendar, Repeat } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { useState, useEffect, useMemo } from 'react';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import type { DailyGoal } from '@/lib/types';
 
+// Schemas
 const examGoalSchema = z.object({
   targetGPA: z.coerce.number().min(1).max(5),
   examDate: z.string().refine((d) => !isNaN(Date.parse(d)), 'Invalid date'),
@@ -27,6 +31,33 @@ const examGoalSchema = z.object({
   ),
 });
 
+const dailyGoalSchema = z.object({
+    date: z.string(),
+    studyHours: z.coerce.number().min(0),
+    topicsToComplete: z.coerce.number().min(0),
+    completed: z.boolean().default(false),
+});
+
+const weeklyGoalSchema = z.object({
+    weekStart: z.string(),
+    targets: z.array(z.object({
+        subjectId: z.string(),
+        chaptersToComplete: z.coerce.number().min(0)
+    })),
+    revisionHours: z.coerce.number().min(0),
+    mockTests: z.coerce.number().min(0)
+});
+
+const monthlyGoalSchema = z.object({
+    month: z.string(),
+    milestones: z.array(z.object({
+        subjectId: z.string(),
+        targetCompletion: z.coerce.number().min(0).max(100),
+    })),
+});
+
+
+// Components
 function ExamGoals() {
   const [profile, setProfile] = useProfile();
   const [goals, setGoals] = useGoals();
@@ -35,16 +66,15 @@ function ExamGoals() {
 
   const form = useForm<z.infer<typeof examGoalSchema>>({
     resolver: zodResolver(examGoalSchema),
-    defaultValues: goals?.exam,
   });
 
   useEffect(() => {
     if (goals && subjects.length > 0) {
       const defaultValues = {
-        targetGPA: goals.exam.targetGPA || profile.targetGPA,
-        examDate: goals.exam.examDate || profile.examDate,
+        targetGPA: goals.exam?.targetGPA || profile.targetGPA,
+        examDate: goals.exam?.examDate || profile.examDate,
         subjectTargets: subjects.map(s => {
-          const existing = goals.exam.subjectTargets.find(t => t.subjectId === s.id);
+          const existing = goals.exam?.subjectTargets?.find(t => t.subjectId === s.id);
           return existing || { subjectId: s.id, targetMarks: 80 };
         }),
       }
@@ -62,10 +92,10 @@ function ExamGoals() {
     setProfile(p => ({ ...p, examDate: data.examDate, targetGPA: data.targetGPA }));
     setOpen(false);
   };
+  
+  if (!goals?.exam) return <p>Loading exam goals...</p>
 
-  const gpaProgress = ((goals?.exam.targetGPA || 0) / 5) * 100;
-
-  if (!goals) return <p>Loading goals...</p>
+  const gpaProgress = ((goals.exam.targetGPA || 0) / 5) * 100;
 
   return (
     <Card>
@@ -130,14 +160,14 @@ function ExamGoals() {
           <div className="flex justify-between mb-1">
             <span className="font-medium">Target GPA</span>
             <span className="text-muted-foreground">
-              {goals.exam.targetGPA.toFixed(2)} / 5.00
+              {goals.exam.targetGPA?.toFixed(2)} / 5.00
             </span>
           </div>
           <Progress value={gpaProgress} />
         </div>
         <div className="space-y-2">
             <h4 className="text-sm font-medium text-muted-foreground">Subject Targets</h4>
-            {goals.exam.subjectTargets.map(target => {
+            {goals.exam.subjectTargets?.map(target => {
                 const subject = subjects.find(s => s.id === target.subjectId);
                 if (!subject) return null;
                 const progress = (target.targetMarks / 100) * 100;
@@ -157,6 +187,348 @@ function ExamGoals() {
   );
 }
 
+function DailyGoals() {
+  const [goals, setGoals] = useGoals();
+  const [sessions] = useStudySessions();
+  const [progress] = useProgress();
+
+  const [open, setOpen] = useState(false);
+
+  const today = new Date();
+  const todayStr = format(today, 'yyyy-MM-dd');
+  const todaysGoal = goals.daily.find(g => g.date === todayStr);
+
+  const form = useForm<z.infer<typeof dailyGoalSchema>>({
+    resolver: zodResolver(dailyGoalSchema),
+    defaultValues: todaysGoal || { date: todayStr, studyHours: 6, topicsToComplete: 3, completed: false },
+  });
+  
+  useEffect(() => {
+    form.reset(todaysGoal || { date: todayStr, studyHours: 6, topicsToComplete: 3, completed: false });
+  }, [todaysGoal, form, todayStr]);
+
+  const onSubmit = (data: z.infer<typeof dailyGoalSchema>) => {
+    const updatedDailyGoals = goals.daily.filter(g => g.date !== data.date);
+    setGoals({ ...goals, daily: [...updatedDailyGoals, data] });
+    setOpen(false);
+  };
+  
+  const toggleGoalCompletion = (goal: DailyGoal) => {
+    const updatedGoal = { ...goal, completed: !goal.completed };
+    const updatedDailyGoals = goals.daily.map(g => g.date === goal.date ? updatedGoal : g);
+    setGoals({ ...goals, daily: updatedDailyGoals });
+  };
+  
+  const { actualHours, actualTopics } = useMemo(() => {
+    const todaySessions = sessions.filter(s => isSameDay(new Date(s.date), today));
+    const hours = todaySessions.reduce((sum, s) => sum + s.duration, 0) / 60;
+    
+    const completedTopicIds = Object.entries(progress)
+        .filter(([,p]) => p.status === 'completed' && p.completedDate && isSameDay(new Date(p.completedDate), today))
+        .map(([topicId]) => topicId);
+        
+    return { actualHours: hours, actualTopics: completedTopicIds.length };
+  }, [sessions, progress, today]);
+
+  const hoursProgress = todaysGoal ? (actualHours / todaysGoal.studyHours) * 100 : 0;
+  const topicsProgress = todaysGoal ? (actualTopics / todaysGoal.topicsToComplete) * 100 : 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle>Today&apos;s Goals ({format(today, 'do MMMM')})</CardTitle>
+                <CardDescription>Your daily targets to stay on track.</CardDescription>
+            </div>
+            <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm"><Edit className="mr-2 h-4 w-4" /> Edit Today&apos;s Goal</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Edit Today&apos;s Goal</DialogTitle></DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField control={form.control} name="studyHours" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Target Study Hours</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="topicsToComplete" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Target Topics to Complete</FormLabel>
+                      <FormControl><Input type="number" {...field} /></FormControl>
+                    </FormItem>
+                  )} />
+                  <Button type="submit">Save Goal</Button>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {todaysGoal ? (
+            <>
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="daily-completed" checked={todaysGoal.completed} onCheckedChange={() => toggleGoalCompletion(todaysGoal)} />
+                    <label htmlFor="daily-completed" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                        Mark day as completed
+                    </label>
+                </div>
+                <div>
+                    <div className="flex justify-between mb-1"><span className="font-medium">Study Hours</span><span>{actualHours.toFixed(1)} / {todaysGoal.studyHours}h</span></div>
+                    <Progress value={hoursProgress} />
+                </div>
+                 <div>
+                    <div className="flex justify-between mb-1"><span className="font-medium">Topics Completed</span><span>{actualTopics} / {todaysGoal.topicsToComplete}</span></div>
+                    <Progress value={topicsProgress} />
+                </div>
+            </>
+        ) : (
+            <div className="text-center py-8">
+                <p className="text-muted-foreground">No goal set for today.</p>
+            </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function WeeklyGoals() {
+  const [goals, setGoals] = useGoals();
+  const [subjects] = useSubjects();
+  const [open, setOpen] = useState(false);
+  
+  const today = new Date();
+  const weekStart = format(startOfWeek(today, { weekStartsOn: 6 }), 'yyyy-MM-dd'); // Saturday
+  const weekEnd = format(endOfWeek(today, { weekStartsOn: 6 }), 'yyyy-MM-dd');
+
+  const currentWeeklyGoal = goals.weekly.find(g => g.weekStart === weekStart);
+
+  const form = useForm<z.infer<typeof weeklyGoalSchema>>({
+    resolver: zodResolver(weeklyGoalSchema),
+  });
+
+  useEffect(() => {
+    const defaultValues = {
+        weekStart: weekStart,
+        targets: subjects.map(s => {
+            const existing = currentWeeklyGoal?.targets.find(t => t.subjectId === s.id);
+            return existing || { subjectId: s.id, chaptersToComplete: 1 };
+        }),
+        revisionHours: currentWeeklyGoal?.revisionHours || 5,
+        mockTests: currentWeeklyGoal?.mockTests || 1
+    };
+    form.reset(defaultValues);
+  }, [currentWeeklyGoal, subjects, weekStart, form]);
+
+  const { fields } = useFieldArray({
+    control: form.control,
+    name: 'targets',
+  });
+
+  const onSubmit = (data: z.infer<typeof weeklyGoalSchema>) => {
+    const updatedWeeklyGoals = goals.weekly.filter(g => g.weekStart !== data.weekStart);
+    setGoals({ ...goals, weekly: [...updatedWeeklyGoals, data] });
+    setOpen(false);
+  };
+  
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle>This Week&apos;s Goals ({format(new Date(weekStart), 'do MMM')} - {format(new Date(weekEnd), 'do MMM')})</CardTitle>
+                <CardDescription>Define your targets for the current week.</CardDescription>
+            </div>
+            <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm"><Edit className="mr-2 h-4 w-4" /> Edit Week&apos;s Goal</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader><DialogTitle>Edit Weekly Goal</DialogTitle></DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto p-1">
+                   <div>
+                    <h4 className="text-sm font-medium mb-2">Chapters to Complete</h4>
+                    <div className="space-y-2">
+                      {fields.map((field, index) => {
+                        const subject = subjects.find(s => s.id === field.subjectId);
+                        if (!subject) return null;
+                        return (
+                          <div key={field.id} className="flex items-center gap-2">
+                            <Label className="flex-1" style={{ color: subject.color }}>{subject.name}</Label>
+                            <FormField control={form.control} name={`targets.${index}.chaptersToComplete`} render={({ field }) => (
+                              <FormItem><FormControl><Input type="number" className="w-20 h-8" {...field} /></FormControl></FormItem>
+                            )} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <FormField control={form.control} name="revisionHours" render={({ field }) => (
+                    <FormItem><FormLabel>Revision Hours</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                  )} />
+                  <FormField control={form.control} name="mockTests" render={({ field }) => (
+                    <FormItem><FormLabel>Mock Tests</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                  )} />
+                  <Button type="submit">Save Goal</Button>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {currentWeeklyGoal ? (
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h4 className="font-medium mb-2">Chapter Targets</h4>
+                    <ul className="space-y-2">
+                        {currentWeeklyGoal.targets.map(t => {
+                            const subject = subjects.find(s => s.id === t.subjectId);
+                            if (!subject) return null;
+                            return <li key={t.subjectId} className="flex justify-between text-sm">
+                                <span style={{ color: subject.color }}>{subject.name}</span>
+                                <span>{t.chaptersToComplete} chapters</span>
+                            </li>
+                        })}
+                    </ul>
+                </div>
+                <div className="space-y-4">
+                     <div><h4 className="font-medium">Revision</h4><p className="text-muted-foreground">{currentWeeklyGoal.revisionHours} hours</p></div>
+                     <div><h4 className="font-medium">Mock Tests</h4><p className="text-muted-foreground">{currentWeeklyGoal.mockTests} tests</p></div>
+                </div>
+             </div>
+        ) : (
+            <div className="text-center py-8"><p className="text-muted-foreground">No goal set for this week.</p></div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function MonthlyGoals() {
+    const [goals, setGoals] = useGoals();
+    const [subjects, , loadingSubjects] = useSubjects();
+    const [progress] = useProgress();
+    const [open, setOpen] = useState(false);
+
+    const today = new Date();
+    const monthStart = format(startOfMonth(today), 'yyyy-MM');
+
+    const currentMonthlyGoal = goals.monthly.find(g => g.month === monthStart);
+
+    const form = useForm<z.infer<typeof monthlyGoalSchema>>({
+        resolver: zodResolver(monthlyGoalSchema),
+    });
+
+    useEffect(() => {
+        const defaultValues = {
+            month: monthStart,
+            milestones: subjects.map(s => {
+                const existing = currentMonthlyGoal?.milestones.find(m => m.subjectId === s.id);
+                return existing || { subjectId: s.id, targetCompletion: 25 };
+            }),
+        };
+        form.reset(defaultValues);
+    }, [currentMonthlyGoal, subjects, monthStart, form]);
+
+    const { fields } = useFieldArray({ control: form.control, name: 'milestones' });
+
+    const onSubmit = (data: z.infer<typeof monthlyGoalSchema>) => {
+        const updatedMonthlyGoals = goals.monthly.filter(g => g.month !== data.month);
+        setGoals({ ...goals, monthly: [...updatedMonthlyGoals, data] });
+        setOpen(false);
+    };
+
+    const subjectProgressData = useMemo(() => {
+        if (!subjects) return {};
+        const data: { [key: string]: number } = {};
+        subjects.forEach(subject => {
+            const allTopics = (subject.chapters || []).flatMap(c => c.topics);
+            if (allTopics.length === 0) {
+                data[subject.id] = 0;
+                return;
+            }
+            const completed = allTopics.filter(t => progress[t.id]?.status === 'completed').length;
+            data[subject.id] = (completed / allTopics.length) * 100;
+        });
+        return data;
+    }, [subjects, progress]);
+
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>This Month&apos;s Goals ({format(today, 'MMMM yyyy')})</CardTitle>
+                        <CardDescription>High-level milestones for the month.</CardDescription>
+                    </div>
+                    <Dialog open={open} onOpenChange={setOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="sm"><Edit className="mr-2 h-4 w-4" /> Edit Month&apos;s Goal</Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                            <DialogHeader><DialogTitle>Edit Monthly Goals</DialogTitle></DialogHeader>
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto p-1">
+                                    <div>
+                                        <h4 className="text-sm font-medium mb-2">Subject Completion Milestones</h4>
+                                        <div className="space-y-2">
+                                            {fields.map((field, index) => {
+                                                const subject = subjects.find(s => s.id === field.subjectId);
+                                                if (!subject) return null;
+                                                return (
+                                                    <div key={field.id} className="flex items-center gap-2">
+                                                        <Label className="flex-1" style={{ color: subject.color }}>{subject.name}</Label>
+                                                        <FormField control={form.control} name={`milestones.${index}.targetCompletion`} render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormControl>
+                                                                    <div className="flex items-center gap-1">
+                                                                        <Input type="number" className="w-20 h-8" {...field} />
+                                                                        <span>%</span>
+                                                                    </div>
+                                                                </FormControl>
+                                                            </FormItem>
+                                                        )} />
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                    <Button type="submit">Save Goals</Button>
+                                </form>
+                            </Form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {currentMonthlyGoal ? (
+                    currentMonthlyGoal.milestones.map(m => {
+                        const subject = subjects.find(s => s.id === m.subjectId);
+                        if (!subject) return null;
+                        const currentProgress = subjectProgressData[m.subjectId] || 0;
+                        return (
+                            <div key={m.subjectId}>
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="font-medium text-sm" style={{ color: subject.color }}>{subject.name}</span>
+                                    <span className="text-sm text-muted-foreground">{currentProgress.toFixed(0)}% / {m.targetCompletion}%</span>
+                                </div>
+                                <Progress value={currentProgress} indicatorColor={subject.color} />
+                            </div>
+                        )
+                    })
+                ) : (
+                    <div className="text-center py-8"><p className="text-muted-foreground">No goals set for this month.</p></div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function GoalsPage() {
   const [subjects] = useSubjects();
@@ -171,14 +543,26 @@ export default function GoalsPage() {
       </div>
       
       {subjects.length > 0 ? (
-        <div className="grid gap-6">
+        <Tabs defaultValue="exam" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="exam">Exam</TabsTrigger>
+            <TabsTrigger value="daily">Daily</TabsTrigger>
+            <TabsTrigger value="weekly">Weekly</TabsTrigger>
+            <TabsTrigger value="monthly">Monthly</TabsTrigger>
+          </TabsList>
+          <TabsContent value="exam">
             <ExamGoals />
-            {/* Placeholder for other goal types */}
-            <Card>
-                <CardHeader><CardTitle>Daily, Weekly, Monthly Goals</CardTitle></CardHeader>
-                <CardContent><p className="text-muted-foreground">Feature coming soon!</p></CardContent>
-            </Card>
-        </div>
+          </TabsContent>
+          <TabsContent value="daily">
+            <DailyGoals />
+          </TabsContent>
+          <TabsContent value="weekly">
+            <WeeklyGoals />
+          </TabsContent>
+          <TabsContent value="monthly">
+            <MonthlyGoals />
+          </TabsContent>
+        </Tabs>
       ) : (
         <Card>
             <CardContent className="py-12 flex flex-col items-center justify-center text-center">
@@ -188,7 +572,6 @@ export default function GoalsPage() {
             </CardContent>
         </Card>
       )}
-
     </div>
   );
 }

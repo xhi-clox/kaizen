@@ -75,11 +75,93 @@
         }
       }
     },
+    "DailyGoal": {
+        "title": "Daily Goal",
+        "description": "A user's goal for a single day.",
+        "type": "object",
+        "properties": {
+            "date": { "type": "string", "format": "date" },
+            "studyHours": { "type": "number" },
+            "topicsToComplete": { "type": "number" },
+            "completed": { "type": "boolean" },
+            "actualHours": { "type": "number" },
+            "actualTopics": { "type": "number" }
+        },
+        "required": ["date", "studyHours", "topicsToComplete", "completed"]
+    },
+    "WeeklyGoal": {
+        "title": "Weekly Goal",
+        "description": "A user's goal for a week.",
+        "type": "object",
+        "properties": {
+            "weekStart": { "type": "string", "format": "date" },
+            "targets": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "subjectId": { "type": "string" },
+                        "chaptersToComplete": { "type": "number" }
+                    },
+                    "required": ["subjectId", "chaptersToComplete"]
+                }
+            },
+            "revisionHours": { "type": "number" },
+            "mockTests": { "type": "number" }
+        },
+        "required": ["weekStart", "targets", "revisionHours", "mockTests"]
+    },
+    "MonthlyGoal": {
+        "title": "Monthly Goal",
+        "description": "A user's goal for a month.",
+        "type": "object",
+        "properties": {
+            "month": { "type": "string" },
+            "milestones": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "subjectId": { "type": "string" },
+                        "targetCompletion": { "type": "number" }
+                    },
+                    "required": ["subjectId", "targetCompletion"]
+                }
+            }
+        },
+        "required": ["month", "milestones"]
+    },
+     "ExamGoal": {
+        "title": "Exam Goal",
+        "description": "A user's overall exam goals.",
+        "type": "object",
+        "properties": {
+            "targetGPA": { "type": "number" },
+            "examDate": { "type": "string", "format": "date" },
+            "subjectTargets": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "subjectId": { "type": "string" },
+                        "targetMarks": { "type": "number" }
+                    },
+                    "required": ["subjectId", "targetMarks"]
+                }
+            }
+        },
+        "required": ["targetGPA", "examDate", "subjectTargets"]
+    },
     "Goals": {
       "title": "Goals",
       "description": "Stores all user goals.",
       "type": "object",
-      "properties": {}
+      "properties": {
+          "daily": { "type": "array", "items": { "$ref": "#/entities/DailyGoal" }},
+          "weekly": { "type": "array", "items": { "$ref": "#/entities/WeeklyGoal" }},
+          "monthly": { "type": "array", "items": { "$ref": "#/entities/MonthlyGoal" }},
+          "exam": { "$ref": "#/entities/ExamGoal" }
+      }
     },
     "StudySession": {
       "title": "Study Session",

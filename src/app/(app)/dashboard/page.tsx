@@ -14,6 +14,7 @@ import { SubjectProgressList } from '@/components/dashboard/subject-progress-lis
 import { RecentSessions } from '@/components/dashboard/recent-sessions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { WeeklyGoals } from '@/components/dashboard/weekly-goals';
+import { TodaysRoutine } from '@/components/dashboard/todays-routine';
 
 export default function DashboardPage() {
   const [profile, setProfile, loadingProfile] = useProfile();
@@ -98,6 +99,10 @@ export default function DashboardPage() {
         <div className="lg:col-span-2">
           <RecentSessions />
         </div>
+      </div>
+
+      <div className="grid gap-6">
+        <TodaysRoutine />
       </div>
 
       <div>

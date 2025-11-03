@@ -12,7 +12,7 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 const CustomYAxisTick = (props: any) => {
     const { x, y, payload, width } = props;
     return (
-        <Text x={x} y={y} width={width} textAnchor="end" verticalAnchor="middle" fill="#666" style={{ fontSize: '12px' }}>
+        <Text x={x} y={y} width={width} textAnchor="end" verticalAnchor="middle" fill="hsl(var(--foreground))" style={{ fontSize: '12px' }}>
             {payload.value}
         </Text>
     );
@@ -39,13 +39,23 @@ export default function ProgressPage() {
 
   const subjectProgressData = useMemo(() => {
     if (!subjects) return [];
+    
+    const shortenName = (name: string) => {
+        if (name.includes('ICT')) return 'ICT';
+        return name.replace(' Paper', '');
+    }
+
     return subjects
       .sort((a, b) => (a as any).order - (b as any).order)
       .map(subject => {
         const allTopics = (subject.chapters || []).flatMap(c => c.topics);
         const completed = allTopics.filter(t => progress[t.id]?.status === 'completed').length;
         const progressPercentage = allTopics.length > 0 ? (completed / allTopics.length) * 100 : 0;
-        return { name: subject.name, progress: Math.round(progressPercentage), fill: subject.color };
+        return { 
+            name: shortenName(subject.name), 
+            progress: Math.round(progressPercentage), 
+            fill: subject.color 
+        };
       });
   }, [subjects, progress]);
 
@@ -118,7 +128,7 @@ export default function ProgressPage() {
           <CardContent>
             <ChartContainer config={{}} className="h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 120, right: 30 }}>
+                <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 10, right: 30, top: 10, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} unit="%" />
                   <YAxis 

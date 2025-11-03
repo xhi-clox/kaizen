@@ -50,7 +50,8 @@ export default function ProgressPage() {
             'Chemistry': 'CHEM',
             'Biology': 'BIO',
             'Higher Math': 'H. Math',
-            ' Paper': '',
+            ' 1st Paper': ' 1st',
+            ' 2nd Paper': ' 2nd',
         };
 
         let shortName = name;
@@ -141,7 +142,7 @@ export default function ProgressPage() {
             <CardDescription>Your progress in each subject.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-96">
+            <div className="h-96 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 20, right: 30, top: 10, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -158,7 +159,7 @@ export default function ProgressPage() {
                   <Bar dataKey="progress" background={{ fill: 'hsl(var(--muted))' }} radius={[4, 4, 4, 4]} />
                 </BarChart>
               </ResponsiveContainer>
-            </ChartContainer>
+            </div>
           </CardContent>
         </Card>
         <Card>

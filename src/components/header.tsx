@@ -15,6 +15,7 @@ import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { ThemeToggle } from './theme-toggle';
 import { useProfile } from '@/hooks/use-app-data';
+import { useEffect, useState } from 'react';
 
 const getPageTitle = (pathname: string) => {
     if (pathname.startsWith('/dashboard')) return 'Dashboard';
@@ -32,15 +33,19 @@ export function Header() {
   const pathname = usePathname();
   const [profile] = useProfile();
   const pageTitle = getPageTitle(pathname);
+  const [initials, setInitials] = useState('');
 
-  const getInitials = (name: string) => {
-    if (!name) return 'U';
-    const names = name.split(' ');
-    if (names.length > 1) {
-      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
+  useEffect(() => {
+    const getInitials = (name: string) => {
+      if (!name) return 'U';
+      const names = name.split(' ');
+      if (names.length > 1) {
+        return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+      }
+      return name.substring(0, 2).toUpperCase();
+    };
+    setInitials(getInitials(profile.name));
+  }, [profile.name]);
 
 
   return (
@@ -56,7 +61,7 @@ export function Header() {
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
                 <AvatarImage src="https://picsum.photos/seed/hsc-user/100/100" alt={profile.name} data-ai-hint="person portrait" />
-                <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>

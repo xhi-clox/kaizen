@@ -297,7 +297,7 @@ export default function SubjectsPage() {
   const subjectsWithProgress = useMemo(() => {
     if (!subjects) return [];
     return subjects.map((subject) => {
-      const allTopics = subject.chapters.flatMap((c) => c.topics);
+      const allTopics = (subject.chapters || []).flatMap((c) => c.topics || []);
       const completedTopics = allTopics.filter(
         (t) => t.status === 'completed'
       ).length;
@@ -535,7 +535,7 @@ export default function SubjectsPage() {
                         </AlertDialog>
                     </div>
                     <div className="p-4 pt-0 space-y-2">
-                      {subject.chapters.map((chapter) => (
+                      {(subject.chapters || []).map((chapter) => (
                           <Accordion
                           key={chapter.id}
                           type="single"
@@ -547,7 +547,7 @@ export default function SubjectsPage() {
                               {chapter.name}
                               </AccordionTrigger>
                               <AccordionContent className="space-y-2">
-                              {chapter.topics.map((topic) => (
+                              {(chapter.topics || []).map((topic) => (
                                   <TopicItem
                                   key={topic.id}
                                   topic={topic}

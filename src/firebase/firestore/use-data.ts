@@ -9,15 +9,21 @@ import {
   deleteDoc,
   updateDoc,
   type DocumentReference,
-  type CollectionReference,
   type DocumentData,
 } from 'firebase/firestore';
 import { useState, useEffect, useContext, useMemo } from 'react';
 import { FirebaseContext } from '../provider';
-import { useUser } from '../auth/use-user';
 
+// NOTE: This is a placeholder for a real error handling solution.
+// In a real app, you'd want to use a proper error reporting service.
+const handleError = (error: any, context: string) => {
+  console.error(`Firestore error in ${context}:`, error);
+  // Here you could add a toast notification to the user, for example.
+  // import { toast } from '@/hooks/use-toast';
+  // toast({ variant: "destructive", title: "Database Error", description: error.message });
+}
 
-export function useCollection<T>(path: string, uid?: string | null) {
+export function useCollection<T extends { id: string }>(path: string, uid?: string | null) {
   const { firestore } = useContext(FirebaseContext);
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +36,7 @@ export function useCollection<T>(path: string, uid?: string | null) {
   useEffect(() => {
     if (!collectionRef) {
         setLoading(false);
+        setData([]);
         return;
     };
 
@@ -41,7 +48,7 @@ export function useCollection<T>(path: string, uid?: string | null) {
       setData(result);
       setLoading(false);
     }, (error) => {
-        console.error(`Error fetching collection ${path}:`, error);
+        handleError(error, `useCollection (${path})`);
         setLoading(false);
     });
 
@@ -50,19 +57,31 @@ export function useCollection<T>(path: string, uid?: string | null) {
 
   const add = async (item: Omit<T, 'id'>) => {
     if (!collectionRef) return;
-    return await addDoc(collectionRef, item as DocumentData);
+    try {
+      return await addDoc(collectionRef, item as DocumentData);
+    } catch (error) {
+      handleError(error, `add to ${path}`);
+    }
   };
 
   const update = async (id: string, item: Partial<T>) => {
     if (!collectionRef) return;
     const docRef = doc(collectionRef, id);
-    return await updateDoc(docRef, item as DocumentData);
+    try {
+      return await updateDoc(docRef, item as DocumentData);
+    } catch (error) {
+      handleError(error, `update in ${path}`);
+    }
   }
 
   const remove = async (id: string) => {
     if (!collectionRef) return;
     const docRef = doc(collectionRef, id);
-    return await deleteDoc(docRef);
+    try {
+      return await deleteDoc(docRef);
+    } catch (error) {
+      handleError(error, `remove from ${path}`);
+    }
   }
 
   return { data, loading, add, update, remove };
@@ -87,22 +106,21 @@ export function useDoc<T>(ref: DocumentReference | null) {
             }
             setLoading(false);
         }, (error) => {
-            console.error(`Error fetching doc ${ref.path}:`, error);
+            handleError(error, `useDoc (${ref.path})`);
             setLoading(false);
         });
 
         return () => unsubscribe();
     }, [ref]);
-
-    const update = async (item: Partial<T>) => {
-        if (!ref) return;
-        return await updateDoc(ref, item as DocumentData);
-    }
     
     const set = async (item: T) => {
         if (!ref) return;
-        return await setDoc(ref, item as DocumentData);
+        try {
+          return await setDoc(ref, item, { merge: true });
+        } catch (error) {
+          handleError(error, `set for ${ref.path}`);
+        }
     }
 
-    return { data, loading, update, set };
+    return { data, loading, set };
 }

@@ -1,0 +1,78 @@
+'use client';
+
+import { useSubjects, useStudySessions, useGoals } from '@/hooks/use-app-data';
+import { Card, CardContent } from '@/components/ui/card';
+import { BarChart, CheckCircle, Flame } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { format, startOfWeek, isSameDay } from 'date-fns';
+
+const StatCard = ({ icon, label, value, colorClass }: { icon: React.ReactNode, label: string, value: string, colorClass: string }) => (
+    <Card className="flex-1">
+        <CardContent className="flex items-center gap-4 p-4">
+            <div className={`rounded-full p-3 ${colorClass}`}>
+                {icon}
+            </div>
+            <div>
+                <p className="text-sm text-muted-foreground">{label}</p>
+                <p className="text-xl font-bold">{value}</p>
+            </div>
+        </CardContent>
+    </Card>
+)
+
+export function QuickStats() {
+    const [subjects] = useSubjects();
+    const [sessions] = useStudySessions();
+    const [goals] = useGoals();
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    const overallCompletion = useMemo(() => {
+        if (!subjects.length) return 0;
+        const totalTopics = subjects.reduce((acc, subject) => acc + subject.chapters.reduce((chapAcc, chap) => chapAcc + chap.topics.length, 0), 0);
+        const completedTopics = subjects.reduce((acc, subject) => acc + subject.chapters.reduce((chapAcc, chap) => chapAcc + chap.topics.filter(t => t.status === 'completed').length, 0), 0);
+        return totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+    }, [subjects]);
+
+    const weeklyStudyHours = useMemo(() => {
+        if (!isClient) return 0;
+        const weekStart = startOfWeek(new Date(), { weekStartsOn: 6 }); // Saturday
+        const weekSessions = sessions.filter(s => new Date(s.date) >= weekStart);
+        const totalMinutes = weekSessions.reduce((acc, s) => acc + s.duration, 0);
+        return (totalMinutes / 60).toFixed(1);
+    }, [sessions, isClient]);
+    
+    const studyStreak = useMemo(() => {
+        if (!goals.daily.length) return 0;
+        let streak = 0;
+        let currentDate = new Date();
+        const sortedGoals = [...goals.daily].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        for (const goal of sortedGoals) {
+            if (goal.completed && isSameDay(new Date(goal.date), currentDate)) {
+                streak++;
+                currentDate.setDate(currentDate.getDate() - 1);
+            } else if (new Date(goal.date) < currentDate) {
+                break;
+            }
+        }
+        return streak;
+    }, [goals.daily]);
+
+    if (!isClient) {
+        return <div className="grid gap-4 md:grid-cols-3 lg:col-span-2">
+            {[1,2,3].map(i => <Card key={i} className="h-24 animate-pulse"/>)}
+        </div>
+    }
+
+    return (
+        <div className="grid gap-4 md:grid-cols-3 lg:col-span-2">
+            <StatCard icon={<CheckCircle className="text-green-500" />} label="Overall Completion" value={`${overallCompletion}%`} colorClass="bg-green-100 dark:bg-green-900" />
+            <StatCard icon={<Flame className="text-orange-500" />} label="Study Streak" value={`${studyStreak} Days`} colorClass="bg-orange-100 dark:bg-orange-900" />
+            <StatCard icon={<BarChart className="text-blue-500" />} label="This Week's Hours" value={`${weeklyStudyHours}h`} colorClass="bg-blue-100 dark:bg-blue-900" />
+        </div>
+    );
+}

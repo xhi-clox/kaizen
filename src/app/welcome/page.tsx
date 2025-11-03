@@ -50,6 +50,7 @@ export default function WelcomePage() {
   const { setupQuickStart, setupFreshStart } = useAppData();
   const { toast } = useToast();
   const [loading, setLoading] = useState<null | 'quick' | 'fresh'>(null);
+  const [isClient, setIsClient] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -59,6 +60,7 @@ export default function WelcomePage() {
   });
 
   useEffect(() => {
+    setIsClient(true);
     // Set a default exam date 6 months in the future, but only on the client
     form.setValue('examDate', new Date(new Date().setMonth(new Date().getMonth() + 6)));
   }, [form]);
@@ -73,6 +75,7 @@ export default function WelcomePage() {
         description: "We've set up some sample data for you.",
     });
     router.push('/dashboard');
+    setLoading(null);
   }
   
   function handleFreshStart(values: z.infer<typeof FormSchema>) {
@@ -84,6 +87,11 @@ export default function WelcomePage() {
         description: "Your new study plan is ready.",
     });
     router.push('/dashboard');
+    setLoading(null);
+  }
+  
+  if (!isClient) {
+    return null;
   }
 
   return (

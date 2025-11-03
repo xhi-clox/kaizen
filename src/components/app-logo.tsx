@@ -5,7 +5,7 @@ export function AppLogo() {
     <div className="flex items-center gap-2">
       <GraduationCap className="h-6 w-6 text-sidebar-primary" />
       <h1 className="text-lg font-bold text-sidebar-foreground">
-        HSC Success Planner
+        Kaizen 改善
       </h1>
     </div>
   );

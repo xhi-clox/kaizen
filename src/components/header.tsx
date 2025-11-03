@@ -28,7 +28,7 @@ const getPageTitle = (pathname: string) => {
     if (pathname.startsWith('/progress')) return 'Progress & Analytics';
     if (pathname.startsWith('/revision')) return 'Revision System';
     if (pathname.startsWith('/settings')) return 'Settings';
-    return 'HSC Success Planner';
+    return 'Kaizen 改善';
 }
 
 export function Header() {

@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { FirebaseProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'HSC Success Planner',
+  title: 'Kaizen 改善',
   description: 'Your comprehensive HSC exam preparation partner.',
 };
 

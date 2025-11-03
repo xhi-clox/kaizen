@@ -5,7 +5,7 @@ import { useSubjects, useStudySessions, useProgress } from '@/hooks/use-app-data
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Text } from 'recharts';
 import { useMemo } from 'react';
-import { format, startOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import { Target, Clock, BookOpen } from 'lucide-react';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
@@ -78,7 +78,7 @@ export default function ProgressPage() {
   const weeklyStudyData = useMemo(() => {
     const today = new Date();
     const weekStart = startOfWeek(today, { weekStartsOn: 6 }); // Saturday
-    const weekEnd = today;
+    const weekEnd = endOfWeek(today, { weekStartsOn: 6 }); // Friday
     const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
     if (!sessions) return [];
@@ -184,7 +184,7 @@ export default function ProgressPage() {
             <CardDescription>Your daily study time for the current week.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{ hours: { label: 'Hours', color: 'hsl(var(--primary))'}}} className="h-96">
+            <ChartContainer config={{ hours: { label: 'Hours', color: 'hsl(var(--primary))'}}} className="h-96 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={weeklyStudyData}>
                         <CartesianGrid vertical={false} />

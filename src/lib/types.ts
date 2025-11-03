@@ -1,13 +1,7 @@
+
 export type Topic = {
   id: string;
   name: string;
-  status: 'not-started' | 'in-progress' | 'completed' | 'revision';
-  priority: 'high' | 'medium' | 'low';
-  difficulty: 'easy' | 'medium' | 'hard' | null;
-  completedDate: number | null; // timestamp
-  revisionDates: number[]; // timestamps
-  timeSpent: number; // minutes
-  notes: string;
 };
 
 export type Chapter = {
@@ -22,6 +16,18 @@ export type Subject = {
   color: string;
   totalChapters: number;
   chapters: Chapter[];
+};
+
+export type UserProgress = {
+  [topicId: string]: {
+    status: 'not-started' | 'in-progress' | 'completed' | 'revision';
+    priority: 'high' | 'medium' | 'low';
+    difficulty: 'easy' | 'medium' | 'hard' | null;
+    completedDate: number | null; // timestamp
+    revisionDates: number[]; // timestamps
+    timeSpent: number; // minutes
+    notes: string;
+  };
 };
 
 export type DailyGoal = {

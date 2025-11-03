@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useSubjects, useStudySessions } from '@/hooks/use-app-data';
+import { useSubjects, useStudySessions, useProgress } from '@/hooks/use-app-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useMemo } from 'react';
@@ -11,14 +12,15 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 export default function ProgressPage() {
   const [subjects] = useSubjects();
   const [sessions] = useStudySessions();
+  const [progress] = useProgress();
 
   const overallCompletion = useMemo(() => {
     if (!subjects) return 0;
     const allTopics = subjects.flatMap(s => s.chapters.flatMap(c => c.topics));
     if (allTopics.length === 0) return 0;
-    const completed = allTopics.filter(t => t.status === 'completed').length;
+    const completed = allTopics.filter(t => progress[t.id]?.status === 'completed').length;
     return (completed / allTopics.length) * 100;
-  }, [subjects]);
+  }, [subjects, progress]);
 
   const totalStudyTime = useMemo(() => {
     if (!sessions) return 0;
@@ -27,13 +29,15 @@ export default function ProgressPage() {
 
   const subjectProgressData = useMemo(() => {
     if (!subjects) return [];
-    return subjects.map(subject => {
-      const allTopics = subject.chapters.flatMap(c => c.topics);
-      const completed = allTopics.filter(t => t.status === 'completed').length;
-      const progress = allTopics.length > 0 ? (completed / allTopics.length) * 100 : 0;
-      return { name: subject.name, progress: Math.round(progress), fill: subject.color };
-    });
-  }, [subjects]);
+    return subjects
+      .sort((a, b) => (a as any).order - (b as any).order)
+      .map(subject => {
+        const allTopics = (subject.chapters || []).flatMap(c => c.topics);
+        const completed = allTopics.filter(t => progress[t.id]?.status === 'completed').length;
+        const progressPercentage = allTopics.length > 0 ? (completed / allTopics.length) * 100 : 0;
+        return { name: subject.name, progress: Math.round(progressPercentage), fill: subject.color };
+      });
+  }, [subjects, progress]);
 
   const weeklyStudyData = useMemo(() => {
     const today = new Date();

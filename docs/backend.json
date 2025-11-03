@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -54,14 +55,25 @@
       "description": "A topic within a chapter.",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "status": { "type": "string", "enum": ["not-started", "in-progress", "completed", "revision"] },
-        "priority": { "type": "string", "enum": ["high", "medium", "low"] },
-        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard", null] },
-        "completedDate": { "type": ["number", "null"] },
-        "timeSpent": { "type": "number" }
+        "name": { "type": "string" }
       },
-      "required": ["name", "status"]
+      "required": ["name"]
+    },
+    "UserProgress": {
+      "title": "User Progress",
+      "description": "Stores a user's progress for each topic.",
+      "type": "object",
+      "properties": {},
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["not-started", "in-progress", "completed", "revision"] },
+          "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+          "difficulty": { "type": "string", "enum": ["easy", "medium", "hard", null] },
+          "completedDate": { "type": ["number", "null"] },
+          "timeSpent": { "type": "number" }
+        }
+      }
     },
     "Goals": {
       "title": "Goals",
@@ -105,9 +117,13 @@
       "schema": { "$ref": "#/entities/UserProfile" },
       "description": "Stores user profile information."
     },
-    "/users/{userId}/subjects/{subjectId}": {
+    "/syllabus/{subjectId}": {
       "schema": { "$ref": "#/entities/Subject" },
-      "description": "User's academic subjects."
+      "description": "Global list of all academic subjects and their content."
+    },
+    "/users/{userId}/data/progress": {
+        "schema": { "$ref": "#/entities/UserProgress" },
+        "description": "Stores the user's progress for all topics."
     },
     "/users/{userId}/data/goals": {
       "schema": { "$ref": "#/entities/Goals" },

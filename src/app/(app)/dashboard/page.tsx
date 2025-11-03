@@ -1,7 +1,8 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useProfile } from '@/hooks/use-app-data';
+import { useProfile, useSubjects } from '@/hooks/use-app-data';
 import { BookCopy, Timer } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -11,9 +12,12 @@ import { QuickStats } from '@/components/dashboard/quick-stats';
 import { TodaysGoals } from '@/components/dashboard/todays-goals';
 import { SubjectProgressList } from '@/components/dashboard/subject-progress-list';
 import { RecentSessions } from '@/components/dashboard/recent-sessions';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
-  const [profile] = useProfile();
+  const [profile, setProfile, loadingProfile] = useProfile();
+  const [subjects, subjectActions, loadingSubjects] = useSubjects();
+
   const [quote, setQuote] = useState('');
   const [isClient, setIsClient] = useState(false);
 
@@ -27,6 +31,34 @@ export default function DashboardPage() {
     ];
     setQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
   }, []);
+
+  if (loadingProfile || loadingSubjects) {
+      return (
+        <div className="space-y-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <Skeleton className="h-8 w-64 mb-2" />
+                    <Skeleton className="h-4 w-80" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-10 w-48" />
+                    <Skeleton className="h-10 w-36" />
+                </div>
+            </div>
+            <div className="grid gap-6 lg:grid-cols-3">
+                <Skeleton className="h-40" />
+                <Skeleton className="h-40" />
+            </div>
+            <div className="grid gap-6 lg:grid-cols-5">
+                <div className="lg:col-span-3"><Skeleton className="h-64" /></div>
+                <div className="lg:col-span-2"><Skeleton className="h-64" /></div>
+            </div>
+            <div>
+                <Skeleton className="h-80" />
+            </div>
+        </div>
+      )
+  }
 
 
   return (

@@ -1,25 +1,29 @@
+
 'use client';
 
-import { useSubjects } from '@/hooks/use-app-data';
+import { useSubjects, useProgress } from '@/hooks/use-app-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '../ui/button';
-import { BookCopy, PlusCircle } from 'lucide-react';
+import { BookCopy } from 'lucide-react';
 
 export function SubjectProgressList() {
     const [subjects] = useSubjects();
+    const [progress] = useProgress();
 
     const subjectsWithProgress = useMemo(() => {
         if (!subjects) return [];
-        return subjects.map(subject => {
-            const totalTopics = subject.chapters.reduce((acc, chap) => acc + chap.topics.length, 0);
-            const completedTopics = subject.chapters.reduce((acc, chap) => acc + chap.topics.filter(t => t.status === 'completed').length, 0);
-            const progress = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
-            return { ...subject, progress, completedTopics, totalTopics };
+        return subjects
+        .sort((a, b) => (a as any).order - (b as any).order)
+        .map(subject => {
+            const totalTopics = (subject.chapters || []).reduce((acc, chap) => acc + (chap.topics || []).length, 0);
+            const completedTopics = (subject.chapters || []).reduce((acc, chap) => acc + (chap.topics || []).filter(t => progress[t.id]?.status === 'completed').length, 0);
+            const progressPercentage = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+            return { ...subject, progress: progressPercentage, completedTopics, totalTopics };
         });
-    }, [subjects]);
+    }, [subjects, progress]);
 
     return (
         <Card>
@@ -31,9 +35,9 @@ export function SubjectProgressList() {
                 {subjectsWithProgress.length === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-4 text-center py-10 border-2 border-dashed rounded-lg">
                         <BookCopy className="w-12 h-12 text-muted-foreground" />
-                        <p className="text-muted-foreground">You haven&apos;t added any subjects yet.</p>
+                        <p className="text-muted-foreground">Syllabus not loaded.</p>
                         <Button asChild>
-                            <Link href="/subjects"><PlusCircle className="mr-2 h-4 w-4" /> Add Subject</Link>
+                            <Link href="/subjects">Go to Subjects</Link>
                         </Button>
                     </div>
                 ) : (

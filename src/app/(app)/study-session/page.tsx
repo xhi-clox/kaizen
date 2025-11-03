@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -16,11 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useSettings, useSubjects, useStudySessions, useProfile } from '@/hooks/use-app-data';
+import { useSettings, useSubjects, useStudySessions, useProgress } from '@/hooks/use-app-data';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Play, Pause, RefreshCw, SkipForward } from 'lucide-react';
-import type { StudySession, Topic, Subject } from '@/lib/types';
-import { nanoid } from 'nanoid';
+import type { StudySession, Subject } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
@@ -41,8 +41,9 @@ type SessionType = 'work' | 'shortBreak' | 'longBreak';
 
 export default function StudySessionPage() {
   const [settings] = useSettings();
-  const [subjects, { update: updateSubject }] = useSubjects();
-  const [addSession] = useStudySessions();
+  const [subjects] = useSubjects();
+  const [progress, setProgress] = useProgress();
+  const [, addSession] = useStudySessions();
   const { toast } = useToast();
 
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -102,7 +103,7 @@ export default function StudySessionPage() {
   const availableTopics = useMemo(() => {
     if (!selectedSubject) return [];
     const subject = subjects.find((s) => s.id === selectedSubject);
-    return subject ? subject.chapters.flatMap((c) => c.topics) : [];
+    return subject ? (subject.chapters || []).flatMap((c) => c.topics || []) : [];
   }, [selectedSubject, subjects]);
 
 
@@ -155,20 +156,11 @@ export default function StudySessionPage() {
 
   const handleUpdateTopicStatus = (markAsComplete: boolean) => {
     if (markAsComplete && lastCompletedSession) {
-        const { subject, topicId } = lastCompletedSession;
-        const updatedSubject = {
-            ...subject,
-            chapters: subject.chapters.map(c => ({
-                ...c,
-                topics: c.topics.map(t => 
-                    t.id === topicId 
-                    ? { ...t, status: 'completed', completedDate: Date.now() } 
-                    : t
-                )
-            }))
-        };
-      updateSubject(subject.id, updatedSubject);
-      toast({ title: "Topic marked as completed!" });
+        const { topicId } = lastCompletedSession;
+        const currentProgress = progress[topicId] || { status: 'not-started', priority: 'medium', difficulty: null, completedDate: null, timeSpent: 0, notes: '', revisionDates: [] };
+        const updatedProgress = { ...currentProgress, status: 'completed', completedDate: Date.now() };
+        setProgress({ ...progress, [topicId]: updatedProgress });
+        toast({ title: "Topic marked as completed!" });
     }
     setShowCompletionDialog(false);
     setLastCompletedSession(null);
@@ -214,7 +206,7 @@ export default function StudySessionPage() {
       .padStart(2, '0')}`;
   };
 
-  const progress = (timeLeft / getTimerDuration()) * 100;
+  const progressPercentage = (timeLeft / getTimerDuration()) * 100;
   
   if (subjects.length === 0) {
     return (
@@ -264,7 +256,7 @@ export default function StudySessionPage() {
                 r="42"
                 fill="transparent"
                 strokeDasharray={2 * Math.PI * 42}
-                strokeDashoffset={((100 - progress) / 100) * (2 * Math.PI * 42)}
+                strokeDashoffset={((100 - progressPercentage) / 100) * (2 * Math.PI * 42)}
                 transform="rotate(-90 50 50)"
                 style={{ transition: 'stroke-dashoffset 0.3s ease' }}
               />

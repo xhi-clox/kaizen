@@ -28,11 +28,9 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -43,7 +41,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import {
   Select,
@@ -52,146 +49,69 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useSubjects } from '@/hooks/use-app-data';
+import { useSubjects, useProgress } from '@/hooks/use-app-data';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { BookCopy, Edit, PlusCircle, Trash2, BrainCircuit, Languages } from 'lucide-react';
+import { BookCopy, Edit, PlusCircle, Trash2, Languages } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useToast } from '@/hooks/use-toast';
-import { generateSyllabus } from '@/ai/flows/generate-syllabus-flow';
 
+import type { Subject, Chapter, Topic, UserProgress } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
-import type { Subject, Chapter, Topic } from '@/lib/types';
-import { NCTB_SUBJECTS } from '@/lib/constants';
-
-const subjectSchema = z.object({
-  name: z.string().min(1, 'Subject name is required.'),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Please select a valid color.'),
-  totalChapters: z.coerce.number().min(1, 'Must have at least one chapter.'),
+const chapterSchema = z.object({
+  name: z.string().min(1, 'Chapter name is required.'),
 });
 
-function SubjectForm({
+function ChapterForm({
   onSave,
-  subject,
+  chapter,
 }: {
-  onSave: (data: Omit<Subject, 'id' | 'chapters'> & { totalChapters: number }) => void;
-  subject?: Subject;
+  onSave: (data: z.infer<typeof chapterSchema>) => void;
+  chapter?: Chapter;
 }) {
   const [open, setOpen] = useState(false);
-  const [subjects] = useSubjects();
 
-  const form = useForm<z.infer<typeof subjectSchema>>({
-    resolver: zodResolver(subjectSchema),
-    defaultValues: subject || {
-      name: '',
-      color: '#3498db',
-      totalChapters: 10,
-    },
+  const form = useForm<z.infer<typeof chapterSchema>>({
+    resolver: zodResolver(chapterSchema),
+    defaultValues: chapter || { name: '' },
   });
 
-  const onSubmit = (data: z.infer<typeof subjectSchema>) => {
-    const existingSubject = subjects.find(s => s.name.toLowerCase() === data.name.toLowerCase() && s.id !== subject?.id);
-    if (existingSubject) {
-      form.setError('name', { message: 'Subject already exists.'});
-      return;
-    }
+  const onSubmit = (data: z.infer<typeof chapterSchema>) => {
     onSave(data);
     setOpen(false);
     form.reset();
   };
 
-  const handleSelectNCTBSubject = (subjectName: string) => {
-    const selected = NCTB_SUBJECTS.find(s => s.name === subjectName);
-    if(selected) {
-        form.setValue('name', selected.name);
-        form.setValue('color', selected.color);
-        form.setValue('totalChapters', selected.totalChapters);
-    }
-  }
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {subject ? (
-          <Button variant="ghost" size="icon">
-            <Edit className="h-4 w-4" />
-          </Button>
+        {chapter ? (
+          <Button variant="ghost" size="icon" className="h-7 w-7"><Edit className="h-4 w-4" /></Button>
         ) : (
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Subject
-          </Button>
+          <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" /> Add Chapter</Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{subject ? 'Edit Subject' : 'Add Subject'}</DialogTitle>
-          <DialogDescription>
-            {subject
-              ? 'Update the details of your subject.'
-              : 'Add a new subject to your syllabus.'}
-          </DialogDescription>
+          <DialogTitle>{chapter ? 'Edit Chapter' : 'Add Chapter'}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-            <Label>Quick Add NCTB Subject</Label>
-            <Select onValueChange={handleSelectNCTBSubject}>
-                <SelectTrigger>
-                    <SelectValue placeholder="Select a subject to quick-add" />
-                </SelectTrigger>
-                <SelectContent>
-                    {NCTB_SUBJECTS.map(s => <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>)}
-                </SelectContent>
-            </Select>
-        </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Subject Name</FormLabel>
+                  <FormLabel>Chapter Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Physics" {...field} />
+                    <Input placeholder="e.g., Vectors" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Color</FormLabel>
-                  <FormControl>
-                    <Input type="color" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {!subject && (
-              <FormField
-                control={form.control}
-                name="totalChapters"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Number of Chapters</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        placeholder="e.g., 12"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
             <DialogFooter>
               <Button type="submit">Save</Button>
             </DialogFooter>
@@ -208,16 +128,20 @@ const topicFormSchema = z.object({
 
 function TopicItem({
   topic,
+  progress,
   subjectId,
   chapterId,
   onUpdateTopic,
   onDeleteTopic,
+  onUpdateProgress,
 }: {
   topic: Topic;
+  progress?: UserProgress[string];
   subjectId: string;
   chapterId: string;
   onUpdateTopic: (subjectId: string, chapterId: string, topic: Topic) => void;
   onDeleteTopic: (subjectId: string, chapterId: string, topicId: string) => void;
+  onUpdateProgress: (topicId: string, newProgress: UserProgress[string]) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const form = useForm<z.infer<typeof topicFormSchema>>({
@@ -229,6 +153,8 @@ function TopicItem({
     onUpdateTopic(subjectId, chapterId, { ...topic, name: data.name });
     setIsEditing(false);
   };
+  
+  const currentProgress = progress || { status: 'not-started', priority: 'medium', difficulty: null, completedDate: null, timeSpent: 0, notes: '', revisionDates: [] };
 
   return (
     <div className="flex items-center space-x-4 rounded-md p-2 hover:bg-muted group">
@@ -250,8 +176,8 @@ function TopicItem({
             <p className="text-sm font-medium leading-none">{topic.name}</p>
           </div>
           <Select
-            value={topic.status}
-            onValueChange={(status) => onUpdateTopic(subjectId, chapterId, { ...topic, status: status as Topic['status'] })}
+            value={currentProgress.status}
+            onValueChange={(status) => onUpdateProgress(topic.id, { ...currentProgress, status: status as UserProgress[string]['status'] })}
           >
             <SelectTrigger className="w-[120px] h-8">
               <SelectValue />
@@ -290,44 +216,46 @@ function TopicItem({
 }
 
 export default function SubjectsPage() {
-  const [subjects, { add, update, remove }] = useSubjects();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const { toast } = useToast();
+  const [subjects, { update: updateSubject }, loadingSubjects] = useSubjects();
+  const [progress, setProgress, loadingProgress] = useProgress();
 
   const subjectsWithProgress = useMemo(() => {
-    if (!subjects) return [];
-    return subjects.map((subject) => {
+    return subjects
+    .sort((a, b) => (a as any).order - (b as any).order)
+    .map((subject) => {
       const allTopics = (subject.chapters || []).flatMap((c) => c.topics || []);
       const completedTopics = allTopics.filter(
-        (t) => t.status === 'completed'
+        (t) => progress[t.id]?.status === 'completed'
       ).length;
-      const progress =
+      const progressPercentage =
         allTopics.length > 0
           ? Math.round((completedTopics / allTopics.length) * 100)
           : 0;
-      return { ...subject, progress, topicCount: allTopics.length, completedCount: completedTopics };
+      return { ...subject, progress: progressPercentage, topicCount: allTopics.length, completedCount: completedTopics };
     });
-  }, [subjects]);
+  }, [subjects, progress]);
 
-  const handleAddSubject = (data: Omit<Subject, 'id' | 'chapters'> & { totalChapters: number }) => {
-    const newSubject: Omit<Subject, 'id'> = {
-      ...data,
-      chapters: Array.from({ length: data.totalChapters }, (_, i) => ({
-          id: nanoid(),
-          name: `Chapter ${i + 1}`,
-          topics: [],
-        })),
-    };
-    add(newSubject);
+  const handleUpdateChapter = (subjectId: string, updatedChapter: Chapter) => {
+    const subject = subjects.find(s => s.id === subjectId);
+    if (!subject) return;
+    const updatedChapters = subject.chapters.map(c => c.id === updatedChapter.id ? updatedChapter : c);
+    updateSubject(subjectId, { chapters: updatedChapters });
+  };
+  
+  const handleAddChapter = (subjectId: string, chapterName: string) => {
+    const subject = subjects.find(s => s.id === subjectId);
+    if (!subject) return;
+    const newChapter: Chapter = { id: nanoid(), name: chapterName, topics: [] };
+    const updatedChapters = [...subject.chapters, newChapter];
+    updateSubject(subjectId, { chapters: updatedChapters, totalChapters: updatedChapters.length });
   };
 
-  const handleUpdateSubject = (subjectId: string, data: Partial<Subject>) => {
-    update(subjectId, data);
-  };
-
-  const handleDeleteSubject = (subjectId: string) => {
-    remove(subjectId);
-  };
+  const handleDeleteChapter = (subjectId: string, chapterId: string) => {
+    const subject = subjects.find(s => s.id === subjectId);
+    if (!subject) return;
+    const updatedChapters = subject.chapters.filter(c => c.id !== chapterId);
+    updateSubject(subjectId, { chapters: updatedChapters, totalChapters: updatedChapters.length });
+  }
 
   const handleUpdateTopic = (
     subjectId: string,
@@ -336,86 +264,55 @@ export default function SubjectsPage() {
   ) => {
     const subject = subjects.find(s => s.id === subjectId);
     if (!subject) return;
-
     const updatedChapters = subject.chapters.map(c => c.id === chapterId ? {
         ...c,
         topics: c.topics.map(t => t.id === updatedTopic.id ? updatedTopic : t)
     } : c);
-
-    update(subjectId, { chapters: updatedChapters });
+    updateSubject(subjectId, { chapters: updatedChapters });
   };
   
   const handleAddTopic = (subjectId: string, chapterId: string, topicName: string) => {
     const subject = subjects.find(s => s.id === subjectId);
     if (!subject) return;
-
-    const newTopic: Topic = {
-        id: nanoid(),
-        name: topicName,
-        status: 'not-started',
-        priority: 'medium',
-        difficulty: null,
-        completedDate: null,
-        revisionDates: [],
-        timeSpent: 0,
-        notes: '',
-    };
-    
+    const newTopic: Topic = { id: nanoid(), name: topicName };
     const updatedChapters = subject.chapters.map(c => c.id === chapterId ? {
         ...c,
         topics: [...c.topics, newTopic]
     } : c);
-
-    update(subjectId, { chapters: updatedChapters });
+    updateSubject(subjectId, { chapters: updatedChapters });
   };
 
   const handleDeleteTopic = (subjectId: string, chapterId: string, topicId: string) => {
     const subject = subjects.find(s => s.id === subjectId);
     if (!subject) return;
-
     const updatedChapters = subject.chapters.map(c => c.id === chapterId ? {
         ...c,
         topics: c.topics.filter(t => t.id !== topicId)
     } : c);
-
-    update(subjectId, { chapters: updatedChapters });
+    updateSubject(subjectId, { chapters: updatedChapters });
   }
 
-  const handleGenerateSyllabus = async () => {
-    setIsGenerating(true);
-    toast({
-        title: 'Generating Syllabus...',
-        description: 'The AI is building your complete syllabus. This may take a moment.',
-    });
-    try {
-        const result = await generateSyllabus({ curriculumName: 'NCTB HSC Science Group' });
-        
-        // Clear existing subjects before adding new ones
-        await Promise.all(subjects.map(s => remove(s.id)));
-        
-        // Add new subjects
-        for (const subject of result.subjects) {
-           await add(subject as Omit<Subject, 'id'>);
-        }
-
-        toast({
-            title: 'Syllabus Generated!',
-            description: 'Your new AI-generated syllabus has been loaded.',
-        });
-    } catch (error) {
-        console.error("Error generating syllabus:", error);
-        toast({
-            variant: "destructive",
-            title: "Uh oh! Something went wrong.",
-            description: "Could not generate the syllabus. Please try again.",
-        });
-    } finally {
-        setIsGenerating(false);
-    }
+  const handleUpdateProgress = (topicId: string, newProgress: UserProgress[string]) => {
+    setProgress({ ...progress, [topicId]: newProgress });
   }
 
+  if (loadingSubjects) {
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <Skeleton className="h-10 w-64" />
+                <div className="flex gap-2">
+                    <Skeleton className="h-10 w-24" />
+                </div>
+            </div>
+            <div className="space-y-4">
+                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
+            </div>
+        </div>
+    );
+  }
 
-  if (subjects.length === 0 && !isGenerating) {
+  if (subjects.length === 0) {
     return (
         <Card>
             <CardHeader>
@@ -424,14 +321,8 @@ export default function SubjectsPage() {
             <CardContent>
                 <div className="flex flex-col items-center justify-center gap-4 text-center py-10 border-2 border-dashed rounded-lg">
                     <BookCopy className="w-12 h-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">You haven&apos;t added any subjects yet. Add one manually or let AI generate it for you.</p>
-                    <div className="flex gap-2">
-                        <SubjectForm onSave={handleAddSubject} />
-                        <Button variant="outline" onClick={handleGenerateSyllabus} disabled={isGenerating}>
-                            <BrainCircuit className="mr-2 h-4 w-4" />
-                            {isGenerating ? 'Generating...' : 'Generate with AI'}
-                        </Button>
-                    </div>
+                    <p className="text-muted-foreground">The syllabus has not been loaded into the database.</p>
+                    <p className="text-sm text-muted-foreground">Please ask your administrator to seed the syllabus.</p>
                 </div>
             </CardContent>
         </Card>
@@ -446,41 +337,12 @@ export default function SubjectsPage() {
           <p className="text-muted-foreground">Manage your subjects, chapters, and topics to track your progress.</p>
         </div>
         <div className="flex gap-2">
-            <Button variant="outline" disabled>
+            <Button variant="outline">
                 <Languages className="mr-2 h-4 w-4" />
                 English
             </Button>
-            <SubjectForm onSave={handleAddSubject} />
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="outline" disabled={isGenerating}>
-                        <BrainCircuit className="mr-2 h-4 w-4" />
-                        {isGenerating ? 'Generating...' : 'Generate with AI'}
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Generate Syllabus with AI?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will replace your current syllabus with a new one generated by AI based on the NCTB HSC curriculum. This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleGenerateSyllabus}>Generate</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </div>
       </div>
-
-      {isGenerating && subjects.length === 0 && (
-          <div className="text-center py-10">
-            <BrainCircuit className="mx-auto h-12 w-12 animate-pulse text-primary" />
-            <p className="mt-4 text-lg font-semibold">Generating Syllabus...</p>
-            <p className="mt-1 text-sm text-muted-foreground">Please wait while the AI builds your curriculum.</p>
-          </div>
-      )}
 
       <Accordion type="single" collapsible className="w-full space-y-4">
         {subjectsWithProgress.map((subject) => (
@@ -508,31 +370,7 @@ export default function SubjectsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="p-4 pt-0">
                     <div className="p-2 flex justify-end gap-2 border-b mb-2">
-                        <SubjectForm
-                            subject={subject}
-                            onSave={(data) => handleUpdateSubject(subject.id, data)}
-                        />
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                This will permanently delete the subject &quot;{subject.name}&quot; and all its chapters and topics. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>
-                                Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                       <ChapterForm onSave={(data) => handleAddChapter(subject.id, data.name)} />
                     </div>
                     <div className="p-4 pt-0 space-y-2">
                       {(subject.chapters || []).map((chapter) => (
@@ -543,18 +381,38 @@ export default function SubjectsPage() {
                           className="border rounded-md px-4 bg-muted/50"
                           >
                           <AccordionItem value={chapter.id} className="border-b-0">
-                              <AccordionTrigger>
-                              {chapter.name}
+                              <AccordionTrigger className="group/chapter-trigger">
+                                <span className="flex-1 text-left">{chapter.name}</span>
+                                <div className="opacity-0 group-hover/chapter-trigger:opacity-100 transition-opacity flex items-center">
+                                  <ChapterForm chapter={chapter} onSave={(data) => handleUpdateChapter(subject.id, {...chapter, name: data.name})} />
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Chapter?</AlertDialogTitle>
+                                        <AlertDialogDescription>Are you sure you want to delete "{chapter.name}" and all its topics? This is irreversible.</AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteChapter(subject.id, chapter.id)}>Delete</AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
                               </AccordionTrigger>
                               <AccordionContent className="space-y-2">
                               {(chapter.topics || []).map((topic) => (
                                   <TopicItem
                                   key={topic.id}
                                   topic={topic}
+                                  progress={progress[topic.id]}
                                   subjectId={subject.id}
                                   chapterId={chapter.id}
                                   onUpdateTopic={handleUpdateTopic}
                                   onDeleteTopic={handleDeleteTopic}
+                                  onUpdateProgress={handleUpdateProgress}
                                   />
                               ))}
                               <AddTopicForm subjectId={subject.id} chapterId={chapter.id} onAddTopic={handleAddTopic} />

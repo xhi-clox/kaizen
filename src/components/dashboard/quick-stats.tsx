@@ -1,10 +1,12 @@
+
 'use client';
 
-import { useSubjects, useStudySessions, useGoals } from '@/hooks/use-app-data';
+import { useSubjects, useStudySessions, useGoals, useProgress } from '@/hooks/use-app-data';
 import { Card, CardContent } from '@/components/ui/card';
 import { BarChart, CheckCircle, Flame } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { startOfWeek, isSameDay } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const StatCard = ({ icon, label, value, colorClass }: { icon: React.ReactNode, label: string, value: string, colorClass: string }) => (
     <Card className="flex-1">
@@ -21,7 +23,8 @@ const StatCard = ({ icon, label, value, colorClass }: { icon: React.ReactNode, l
 )
 
 export function QuickStats() {
-    const [subjects] = useSubjects();
+    const [subjects,, loadingSubjects] = useSubjects();
+    const [progress,, loadingProgress] = useProgress();
     const [sessions] = useStudySessions();
     const [goals] = useGoals();
     const [isClient, setIsClient] = useState(false);
@@ -32,11 +35,11 @@ export function QuickStats() {
 
     const overallCompletion = useMemo(() => {
         if (!subjects?.length) return 0;
-        const totalTopics = subjects.reduce((acc, subject) => acc + subject.chapters.reduce((chapAcc, chap) => chapAcc + chap.topics.length, 0), 0);
+        const totalTopics = subjects.reduce((acc, subject) => acc + (subject.chapters || []).reduce((chapAcc, chap) => chapAcc + (chap.topics || []).length, 0), 0);
         if (totalTopics === 0) return 0;
-        const completedTopics = subjects.reduce((acc, subject) => acc + subject.chapters.reduce((chapAcc, chap) => chapAcc + chap.topics.filter(t => t.status === 'completed').length, 0), 0);
+        const completedTopics = subjects.reduce((acc, subject) => acc + (subject.chapters || []).reduce((chapAcc, chap) => chapAcc + (chap.topics || []).filter(t => progress[t.id]?.status === 'completed').length, 0), 0);
         return Math.round((completedTopics / totalTopics) * 100);
-    }, [subjects]);
+    }, [subjects, progress]);
 
     const weeklyStudyHours = useMemo(() => {
         if (!isClient || !sessions) return '0.0';
@@ -63,9 +66,9 @@ export function QuickStats() {
         return streak;
     }, [goals?.daily]);
 
-    if (!isClient) {
+    if (loadingSubjects || loadingProgress) {
         return <div className="grid gap-4 md:grid-cols-3 lg:col-span-2">
-            {[1,2,3].map(i => <Card key={i} className="h-24 animate-pulse"/>)}
+            {[1,2,3].map(i => <Card key={i} className="h-24"><CardContent className="p-4"><Skeleton className="h-full w-full"/></CardContent></Card>)}
         </div>
     }
 

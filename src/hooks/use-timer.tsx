@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -33,6 +34,7 @@ interface TimerContextProps extends Omit<TimerState, 'elapsedTime'> {
   skipTimer: () => void;
   endWorkSession: (wasCompleted: boolean) => void;
   setIsTimerVisible: (isVisible: boolean) => void;
+  setSessionType: (type: SessionType) => void;
 }
 
 const TimerContext = createContext<TimerContextProps | undefined>(undefined);
@@ -190,6 +192,12 @@ export function TimerProvider({ children }: { children: ReactNode }) {
           setState(s => ({ ...s, manualDuration: duration, elapsedTime: 0 }));
       }
   };
+  
+  const setSessionType = (type: SessionType) => {
+    if (!state.isActive) {
+        setState(s => ({ ...s, sessionType: type, elapsedTime: 0 }));
+    }
+  }
 
   const value: TimerContextProps = {
     sessionType: state.sessionType,
@@ -206,6 +214,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     resetTimer,
     skipTimer,
     endWorkSession,
+    setSessionType,
   };
 
   return <TimerContext.Provider value={value}>{children}</TimerContext.Provider>;

@@ -53,6 +53,7 @@ export default function StudySessionPage() {
     skipTimer,
     endWorkSession,
     setIsTimerVisible,
+    setSessionType,
   } = useTimer();
 
   const [subjects] = useSubjects();
@@ -69,9 +70,13 @@ export default function StudySessionPage() {
   const [lastCompletedSession, setLastCompletedSession] = useState<{subjectId: string, topicId: string, subject: Subject} | null>(null);
 
   // When this page mounts, ensure the timer is not shown as a floating widget
+  // and reset any break sessions to a work session.
   useEffect(() => {
     setIsTimerVisible(false);
-  }, [setIsTimerVisible]);
+    if (!isActive && sessionType !== 'work') {
+      setSessionType('work');
+    }
+  }, [setIsTimerVisible, isActive, sessionType, setSessionType]);
 
   const getTimerDuration = useCallback(() => {
     switch (sessionType) {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useSettings, useProfile, useAppData } from '@/hooks/use-app-data';
@@ -32,7 +33,7 @@ const settingsSchema = z.object({
   dailyStudyHoursGoal: z.coerce.number().min(0).max(24),
   pomodoro: z.object({
     work: z.coerce.number().min(5),
-    shortBreak: zcoerce.number().min(1),
+    shortBreak: z.coerce.number().min(1),
     longBreak: z.coerce.number().min(5),
   }),
 });

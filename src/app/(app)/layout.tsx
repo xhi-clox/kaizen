@@ -10,7 +10,7 @@ import { Header } from '@/components/header';
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
-        <div className="min-h-screen w-full bg-background">
+        <div className="flex min-h-screen w-full bg-background">
             <Sidebar>
                 <AppSidebar />
             </Sidebar>

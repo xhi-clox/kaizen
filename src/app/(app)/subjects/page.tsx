@@ -58,10 +58,12 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import type { Subject, Chapter, Topic, UserProgress } from '@/lib/types';
+import type { Subject, Chapter, Topic } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { generateAndSeedSyllabus } from '@/ai/flows/generate-syllabus-flow';
+import type { UserProgress } from '@/lib/types';
+
 
 const chapterSchema = z.object({
   name: z.string().min(1, 'Chapter name is required.'),
@@ -418,27 +420,29 @@ export default function SubjectsPage() {
                           className="border rounded-md px-4 bg-muted/50"
                           >
                           <AccordionItem value={chapter.id} className="border-b-0">
-                              <AccordionTrigger className="group/chapter-trigger">
-                                <span className="flex-1 text-left">{chapter.name}</span>
+                              <div className="flex items-center group/chapter-trigger">
+                                <AccordionTrigger className="flex-1 text-left">
+                                  <span>{chapter.name}</span>
+                                </AccordionTrigger>
                                 <div className="opacity-0 group-hover/chapter-trigger:opacity-100 transition-opacity flex items-center">
-                                  <ChapterForm subjectId={subject.id} chapter={chapter} onSave={handleUpdateChapter} />
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete Chapter?</AlertDialogTitle>
-                                        <AlertDialogDescription>Are you sure you want to delete "{chapter.name}" and all its topics? This is irreversible.</AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteChapter(subject.id, chapter.id)}>Delete</AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </div>
-                              </AccordionTrigger>
+                                    <ChapterForm subjectId={subject.id} chapter={chapter} onSave={handleUpdateChapter} />
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Delete Chapter?</AlertDialogTitle>
+                                          <AlertDialogDescription>Are you sure you want to delete "{chapter.name}" and all its topics? This is irreversible.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleDeleteChapter(subject.id, chapter.id)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                              </div>
                               <AccordionContent className="space-y-2">
                               {(chapter.topics || []).map((topic) => (
                                   <TopicItem

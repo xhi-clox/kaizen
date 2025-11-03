@@ -51,7 +51,7 @@ import {
 } from '@/components/ui/select';
 import { useSubjects, useProgress } from '@/hooks/use-app-data';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { BookCopy, Edit, PlusCircle, Trash2, Languages, BrainCircuit } from 'lucide-react';
+import { BookCopy, Edit, PlusCircle, Trash2, Languages } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -59,7 +59,6 @@ import { z } from 'zod';
 
 import type { Subject, Chapter, Topic, UserProgress } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { generateAndSeedSyllabus } from '@/ai/flows/generate-syllabus-flow';
 import { useToast } from '@/hooks/use-toast';
 
 const chapterSchema = z.object({
@@ -226,7 +225,6 @@ function TopicItem({
 export default function SubjectsPage() {
   const [subjects, { update: updateSubject }, loadingSubjects] = useSubjects();
   const [progress, setProgress] = useProgress();
-  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   const subjectsWithProgress = useMemo(() => {
@@ -249,17 +247,17 @@ export default function SubjectsPage() {
   const handleUpdateChapter = (subjectId: string, updatedChapter: Chapter) => {
     const subject = subjects.find(s => s.id === subjectId);
     if (!subject) return;
-    const isNew = !subject.chapters.some(c => c.id === updatedChapter.id);
+    const isNew = !(subject.chapters || []).some(c => c.id === updatedChapter.id);
     const updatedChapters = isNew 
-      ? [...subject.chapters, updatedChapter]
-      : subject.chapters.map(c => c.id === updatedChapter.id ? updatedChapter : c);
+      ? [...(subject.chapters || []), updatedChapter]
+      : (subject.chapters || []).map(c => c.id === updatedChapter.id ? updatedChapter : c);
     updateSubject(subjectId, { chapters: updatedChapters, totalChapters: updatedChapters.length });
   };
   
   const handleDeleteChapter = (subjectId: string, chapterId: string) => {
     const subject = subjects.find(s => s.id === subjectId);
     if (!subject) return;
-    const updatedChapters = subject.chapters.filter(c => c.id !== chapterId);
+    const updatedChapters = (subject.chapters || []).filter(c => c.id !== chapterId);
     updateSubject(subjectId, { chapters: updatedChapters, totalChapters: updatedChapters.length });
   }
 
@@ -270,9 +268,9 @@ export default function SubjectsPage() {
   ) => {
     const subject = subjects.find(s => s.id === subjectId);
     if (!subject) return;
-    const updatedChapters = subject.chapters.map(c => c.id === chapterId ? {
+    const updatedChapters = (subject.chapters || []).map(c => c.id === chapterId ? {
         ...c,
-        topics: c.topics.map(t => t.id === updatedTopic.id ? updatedTopic : t)
+        topics: (c.topics || []).map(t => t.id === updatedTopic.id ? updatedTopic : t)
     } : c);
     updateSubject(subjectId, { chapters: updatedChapters });
   };
@@ -281,9 +279,9 @@ export default function SubjectsPage() {
     const subject = subjects.find(s => s.id === subjectId);
     if (!subject) return;
     const newTopic: Topic = { id: nanoid(), name: topicName };
-    const updatedChapters = subject.chapters.map(c => c.id === chapterId ? {
+    const updatedChapters = (subject.chapters || []).map(c => c.id === chapterId ? {
         ...c,
-        topics: [...c.topics, newTopic]
+        topics: [...(c.topics || []), newTopic]
     } : c);
     updateSubject(subjectId, { chapters: updatedChapters });
   };
@@ -291,40 +289,15 @@ export default function SubjectsPage() {
   const handleDeleteTopic = (subjectId: string, chapterId: string, topicId: string) => {
     const subject = subjects.find(s => s.id === subjectId);
     if (!subject) return;
-    const updatedChapters = subject.chapters.map(c => c.id === chapterId ? {
+    const updatedChapters = (subject.chapters || []).map(c => c.id === chapterId ? {
         ...c,
-        topics: c.topics.filter(t => t.id !== topicId)
+        topics: (c.topics || []).filter(t => t.id !== topicId)
     } : c);
     updateSubject(subjectId, { chapters: updatedChapters });
   }
 
   const handleUpdateProgress = (topicId: string, newProgress: UserProgress[string]) => {
     setProgress({ ...progress, [topicId]: newProgress });
-  }
-
-  const handleSeedSyllabus = async () => {
-    setIsGenerating(true);
-    toast({
-      title: "Generating Syllabus...",
-      description: "This may take a minute. The page will reload when complete.",
-    });
-    try {
-      const { subjectCount } = await generateAndSeedSyllabus();
-      toast({
-        title: "Syllabus Seeded!",
-        description: `${subjectCount} subjects have been loaded into the database.`,
-      });
-      window.location.reload(); // Reload to get the new data
-    } catch(error) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Error Seeding Syllabus",
-        description: "Could not generate syllabus. Please check the console and try again.",
-      });
-    } finally {
-      setIsGenerating(false);
-    }
   }
 
 
@@ -353,12 +326,8 @@ export default function SubjectsPage() {
             <CardContent>
                 <div className="flex flex-col items-center justify-center gap-4 text-center py-10 border-2 border-dashed rounded-lg">
                     <BookCopy className="w-12 h-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">The syllabus has not been loaded into the database.</p>
-                    <p className="text-sm text-muted-foreground">Click the button below to generate it with AI.</p>
-                    <Button onClick={handleSeedSyllabus} disabled={isGenerating}>
-                        <BrainCircuit className="mr-2 h-4 w-4" />
-                        {isGenerating ? 'Generating...' : 'Seed Syllabus from AI'}
-                    </Button>
+                    <p className="font-semibold">The syllabus has not been loaded into the database.</p>
+                    <p className="text-sm text-muted-foreground">Please ask your administrator to seed the syllabus.</p>
                 </div>
             </CardContent>
         </Card>

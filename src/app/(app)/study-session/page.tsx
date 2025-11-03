@@ -148,18 +148,18 @@ export default function StudySessionPage() {
 
 
   const toggleTimer = () => {
-    if (sessionType === 'work' && (!selectedSubject || !selectedTopic)) {
-      toast({
-        variant: 'destructive',
-        title: 'Missing information',
-        description: 'Please select a subject and topic before starting.',
-      });
-      return;
-    }
     if (isActive) {
-        pauseTimer();
+      pauseTimer();
     } else {
-        startTimer();
+      if (sessionType === 'work' && (!selectedSubject || !selectedTopic)) {
+        toast({
+          variant: 'destructive',
+          title: 'Missing information',
+          description: 'Please select a subject and topic before starting.',
+        });
+        return;
+      }
+      startTimer();
     }
   };
   

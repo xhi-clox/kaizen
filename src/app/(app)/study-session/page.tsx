@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -17,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useSettings, useSubjects, useStudySessions, useProgress } from '@/hooks/use-app-data';
+import { useSubjects, useStudySessions, useProgress } from '@/hooks/use-app-data';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Play, Pause, RefreshCw, SkipForward } from 'lucide-react';
 import type { StudySession, Subject } from '@/lib/types';
@@ -36,11 +35,24 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTimer } from '@/hooks/use-timer';
 
-type SessionType = 'work' | 'shortBreak' | 'longBreak';
 
 export default function StudySessionPage() {
-  const [settings] = useSettings();
+  const {
+    sessionType,
+    timeLeft,
+    isActive,
+    isTimerVisible,
+    manualDuration,
+    setManualDuration,
+    startTimer,
+    pauseTimer,
+    resetTimer,
+    skipTimer,
+    endWorkSession,
+  } = useTimer();
+
   const [subjects] = useSubjects();
   const [progress, setProgress] = useProgress();
   const [, addSession] = useStudySessions();
@@ -51,54 +63,30 @@ export default function StudySessionPage() {
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [sessionNotes, setSessionNotes] = useState('');
 
-  const [sessionCount, setSessionCount] = useState(0);
-  const [sessionType, setSessionType] = useState<SessionType>('work');
-  const [isActive, setIsActive] = useState(false);
-
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [lastCompletedSession, setLastCompletedSession] = useState<{subjectId: string, topicId: string, subject: Subject} | null>(null);
-
-  const [manualDuration, setManualDuration] = useState(settings.pomodoro.work);
-
 
   const getTimerDuration = useCallback(() => {
     switch (sessionType) {
       case 'work':
         return manualDuration * 60;
       case 'shortBreak':
-        return settings.pomodoro.shortBreak * 60;
+        return 5 * 60; // Assuming settings are handled in hook
       case 'longBreak':
-        return settings.pomodoro.longBreak * 60;
+        return 15 * 60;
     }
-  }, [settings, sessionType, manualDuration]);
+  }, [sessionType, manualDuration]);
 
-  const [timeLeft, setTimeLeft] = useState(getTimerDuration());
-
+  // When timer hits 0, handle the session end logic
   useEffect(() => {
-    setTimeLeft(getTimerDuration());
-  }, [settings, sessionType, getTimerDuration]);
-  
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((time) => time - 1);
-      }, 1000);
-    } else if (timeLeft === 0 && isActive) { // only trigger when timer hits 0 and was active
-        handleSessionEnd();
+    if (timeLeft === 0 && !isTimerVisible && sessionType === 'work') {
+      handleSessionEnd();
+    } else if (timeLeft === 0 && !isTimerVisible && (sessionType === 'shortBreak' || sessionType === 'longBreak')) {
+        // Break finished, go back to work
+        resetTimer(); // This will switch type to 'work' in a future state of the hook
+        toast({ title: "Break's over! Time to focus.", variant: 'default' });
     }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, timeLeft]);
-
-  // When settings change, update manual duration if timer is not active
-  useEffect(() => {
-    if (!isActive && settings) {
-      setManualDuration(settings.pomodoro.work);
-    }
-  }, [settings?.pomodoro.work, isActive]);
+  }, [timeLeft, isTimerVisible, sessionType]);
 
 
   const availableChapters = useMemo(() => {
@@ -115,8 +103,6 @@ export default function StudySessionPage() {
 
 
   const handleSessionEnd = useCallback(() => {
-    setIsActive(false);
-    
     if (sessionType === 'work') {
         if (selectedSubject && selectedTopic) {
             const subject = subjects.find(s => s.id === selectedSubject);
@@ -139,27 +125,11 @@ export default function StudySessionPage() {
             setSessionNotes('');
         } else {
             // If no topic was selected, just move to break
-            moveToNextSessionType();
+            endWorkSession(false);
+            toast({ title: "Time for a break!" });
         }
-    } else {
-        setSessionType('work');
-        toast({ title: "Break's over! Time to focus.", variant: 'default' });
-        setTimeLeft(getTimerDuration());
     }
-  }, [sessionType, selectedSubject, selectedTopic, manualDuration, sessionNotes, addSession, toast, getTimerDuration, subjects]);
-
-  const moveToNextSessionType = () => {
-    const newSessionCount = sessionCount + 1;
-    setSessionCount(newSessionCount);
-    if (newSessionCount % 4 === 0) {
-        setSessionType('longBreak');
-        toast({ title: "Time for a long break!" });
-    } else {
-        setSessionType('shortBreak');
-        toast({ title: "Time for a short break!" });
-    }
-    setTimeLeft(getTimerDuration());
-  }
+  }, [sessionType, selectedSubject, selectedTopic, manualDuration, sessionNotes, addSession, toast, subjects, endWorkSession]);
 
   const handleUpdateTopicStatus = (markAsComplete: boolean) => {
     if (markAsComplete && lastCompletedSession) {
@@ -171,7 +141,8 @@ export default function StudySessionPage() {
     }
     setShowCompletionDialog(false);
     setLastCompletedSession(null);
-    moveToNextSessionType();
+    endWorkSession(markAsComplete);
+    toast({ title: "Time for a break!" });
   }
 
 
@@ -184,26 +155,22 @@ export default function StudySessionPage() {
       });
       return;
     }
-    setIsActive(!isActive);
-  };
-
-  const resetTimer = () => {
-    setIsActive(false);
-    setTimeLeft(getTimerDuration());
-  };
-
-  const skipToNext = () => {
-    if(isActive) {
-        handleSessionEnd();
+    if (isActive) {
+        pauseTimer();
     } else {
-        if (sessionType === 'work') {
-            moveToNextSessionType();
-        } else {
-            setSessionType('work');
-            setTimeLeft(getTimerDuration());
-        }
+        startTimer();
     }
   };
+  
+  const handleSkip = () => {
+      skipTimer(); // This just pauses and hides the floating timer
+      if (sessionType === 'work') {
+        handleSessionEnd();
+      } else {
+        resetTimer(); // This will go back to a work session
+      }
+  }
+
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -287,9 +254,6 @@ export default function StudySessionPage() {
                         const newDuration = parseInt(e.target.value, 10);
                         if (!isNaN(newDuration) && newDuration > 0) {
                             setManualDuration(newDuration);
-                            if (!isActive) {
-                                setTimeLeft(newDuration * 60);
-                            }
                         }
                     }}
                     disabled={isActive}
@@ -303,6 +267,7 @@ export default function StudySessionPage() {
                   setSelectedChapter(null);
                   setSelectedTopic(null);
                 }}
+                disabled={isActive}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a subject" />
@@ -322,7 +287,7 @@ export default function StudySessionPage() {
                     setSelectedChapter(val);
                     setSelectedTopic(null);
                 }}
-                disabled={!selectedSubject}
+                disabled={!selectedSubject || isActive}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a chapter" />
@@ -339,7 +304,7 @@ export default function StudySessionPage() {
               <Select
                 value={selectedTopic || ''}
                 onValueChange={setSelectedTopic}
-                disabled={!selectedChapter}
+                disabled={!selectedChapter || isActive}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a topic" />
@@ -352,7 +317,7 @@ export default function StudySessionPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Textarea placeholder="Session notes (optional)..." value={sessionNotes} onChange={e => setSessionNotes(e.target.value)} />
+              <Textarea placeholder="Session notes (optional)..." value={sessionNotes} onChange={e => setSessionNotes(e.target.value)} disabled={isActive} />
             </div>
           )}
         </CardContent>
@@ -368,7 +333,7 @@ export default function StudySessionPage() {
             )}
             {isActive ? 'Pause' : 'Start'}
           </Button>
-          <Button variant="ghost" size="icon" onClick={skipToNext}>
+          <Button variant="ghost" size="icon" onClick={handleSkip}>
             <SkipForward className="h-6 w-6" />
           </Button>
         </CardFooter>

@@ -6,10 +6,13 @@ import {
 } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Header } from '@/components/header';
+import { TimerProvider } from '@/hooks/use-timer';
+import { PersistentTimer } from '@/components/persistent-timer';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
+      <TimerProvider>
         <div className="flex min-h-screen w-full bg-background">
             <Sidebar>
                 <AppSidebar />
@@ -23,6 +26,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </div>
             </SidebarInset>
         </div>
+        <PersistentTimer />
+      </TimerProvider>
     </SidebarProvider>
   );
 }

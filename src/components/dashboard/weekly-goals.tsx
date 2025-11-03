@@ -3,15 +3,17 @@
 
 import { useGoals, useSubjects } from '@/hooks/use-app-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { Button } from '../ui/button';
 import Link from 'next/link';
 import { Calendar } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 export function WeeklyGoals() {
     const [goals] = useGoals();
     const [subjects] = useSubjects();
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const today = useMemo(() => new Date(), []);
     const weekStart = useMemo(() => format(startOfWeek(today, { weekStartsOn: 6 }), 'yyyy-MM-dd'), [today]);
@@ -20,6 +22,14 @@ export function WeeklyGoals() {
     const currentWeeklyGoal = useMemo(() => {
         return goals.weekly.find(g => g.weekStart === weekStart);
     }, [goals.weekly, weekStart]);
+
+    const shortenSubjectName = (name: string) => {
+        if (name.includes('ICT')) return 'ICT';
+        return name;
+    }
+
+    const targetsToShow = currentWeeklyGoal?.targets.slice(0, 3) || [];
+    const allTargets = currentWeeklyGoal?.targets || [];
 
     return (
         <Card>
@@ -33,17 +43,41 @@ export function WeeklyGoals() {
                         <div>
                             <h4 className="font-medium mb-2 text-muted-foreground">Chapter Targets</h4>
                             <ul className="space-y-2">
-                                {currentWeeklyGoal.targets.length > 0 ? currentWeeklyGoal.targets.map(t => {
+                                {targetsToShow.length > 0 ? targetsToShow.map(t => {
                                     const subject = subjects.find(s => s.id === t.subjectId);
                                     if (!subject) return null;
                                     return (
                                         <li key={t.subjectId} className="flex justify-between items-center text-sm">
-                                            <span style={{ color: subject.color }}>{subject.name}</span>
+                                            <span style={{ color: subject.color }}>{shortenSubjectName(subject.name)}</span>
                                             <span className='font-semibold'>{t.chaptersToComplete} chapters</span>
                                         </li>
                                     );
                                 }) : <p className="text-sm text-muted-foreground">No chapter targets set.</p>}
                             </ul>
+                            {allTargets.length > 3 && (
+                                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button variant="link" size="sm" className="p-0 h-auto mt-2">View all</Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>All Chapter Targets</DialogTitle>
+                                        </DialogHeader>
+                                        <ul className="space-y-3 py-4">
+                                            {allTargets.map(t => {
+                                                const subject = subjects.find(s => s.id === t.subjectId);
+                                                if (!subject) return null;
+                                                return (
+                                                    <li key={t.subjectId} className="flex justify-between items-center text-sm">
+                                                        <span style={{ color: subject.color }}>{shortenSubjectName(subject.name)}</span>
+                                                        <span className='font-semibold'>{t.chaptersToComplete} chapters</span>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </DialogContent>
+                                </Dialog>
+                            )}
                         </div>
                         <div className="space-y-4">
                             <div>

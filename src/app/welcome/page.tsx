@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -59,10 +59,10 @@ export default function WelcomePage() {
     },
   });
 
-  // Set default exam date on client side
-  useState(() => {
+  // Set default exam date on client side to avoid hydration error
+  useEffect(() => {
     form.setValue('examDate', new Date(new Date().setMonth(new Date().getMonth() + 6)));
-  });
+  }, [form]);
 
 
   function handleQuickStart(values: z.infer<typeof FormSchema>) {

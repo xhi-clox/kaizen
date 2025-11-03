@@ -16,14 +16,13 @@ export default function DashboardPage() {
   const { profile } = useAppData();
   const [quote, setQuote] = useState('');
 
-  const motivationalQuotes = [
-    "Success is the sum of small efforts repeated daily.",
-    "The secret to getting ahead is getting started.",
-    "You're preparing for your future!",
-    "Believe you can and you're halfway there.",
-  ];
-
   useEffect(() => {
+    const motivationalQuotes = [
+      "Success is the sum of small efforts repeated daily.",
+      "The secret to getting ahead is getting started.",
+      "You're preparing for your future!",
+      "Believe you can and you're halfway there.",
+    ];
     setQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
   }, []);
 

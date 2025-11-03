@@ -325,9 +325,6 @@ export default function StudySessionPage() {
             <Play className="mr-2 h-5 w-5" />
             Start
           </Button>
-          <Button variant="outline" size="icon" onClick={pauseTimer} disabled={!isActive}>
-            <Pause className="h-6 w-6" />
-          </Button>
           <Button variant="ghost" size="icon" onClick={handleSkip} disabled={sessionType === 'work'}>
             <SkipForward className="h-6 w-6" />
           </Button>

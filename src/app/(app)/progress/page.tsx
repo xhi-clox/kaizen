@@ -1,15 +1,135 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+'use client';
+
+import { useSubjects, useStudySessions, useGoals } from '@/hooks/use-app-data';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useMemo } from 'react';
+import { format, startOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
+import { Target, Clock, BookOpen } from 'lucide-react';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
 export default function ProgressPage() {
+  const [subjects] = useSubjects();
+  const [sessions] = useStudySessions();
+  const [goals] = useGoals();
+
+  const overallCompletion = useMemo(() => {
+    const allTopics = subjects.flatMap(s => s.chapters.flatMap(c => c.topics));
+    const completed = allTopics.filter(t => t.status === 'completed').length;
+    return allTopics.length > 0 ? (completed / allTopics.length) * 100 : 0;
+  }, [subjects]);
+
+  const totalStudyTime = useMemo(() => {
+    return sessions.reduce((acc, s) => acc + s.duration, 0) / 60; // in hours
+  }, [sessions]);
+
+  const subjectProgressData = useMemo(() => {
+    return subjects.map(subject => {
+      const allTopics = subject.chapters.flatMap(c => c.topics);
+      const completed = allTopics.filter(t => t.status === 'completed').length;
+      const progress = allTopics.length > 0 ? (completed / allTopics.length) * 100 : 0;
+      return { name: subject.name, progress: Math.round(progress), fill: subject.color };
+    });
+  }, [subjects]);
+
+  const weeklyStudyData = useMemo(() => {
+    const today = new Date();
+    const weekStart = startOfWeek(today, { weekStartsOn: 6 }); // Saturday
+    const weekEnd = today;
+    const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+    return days.map(day => {
+      const daySessions = sessions.filter(s => isSameDay(new Date(s.date), day));
+      const totalMinutes = daySessions.reduce((acc, s) => acc + s.duration, 0);
+      return {
+        name: format(day, 'EEE'),
+        hours: parseFloat((totalMinutes / 60).toFixed(1)),
+      };
+    });
+  }, [sessions]);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Progress & Analytics</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p>This is where you will see detailed analytics and charts about your study progress.</p>
-        <p className="text-muted-foreground">Feature coming soon!</p>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Progress & Analytics</h1>
+          <p className="text-muted-foreground">Visualize your study habits and track your journey.</p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Overall Progress</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{overallCompletion.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">of syllabus completed</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Study Time</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalStudyTime.toFixed(1)}</div>
+            <p className="text-xs text-muted-foreground">hours logged</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Subjects Mastered</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{subjectProgressData.filter(s => s.progress === 100).length}</div>
+            <p className="text-xs text-muted-foreground">out of {subjects.length} subjects</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Subject Completion</CardTitle>
+            <CardDescription>Your progress in each subject.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={{}} className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 10, right: 30 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" domain={[0, 100]} unit="%" />
+                  <YAxis type="category" dataKey="name" width={80} tickLine={false} axisLine={false} />
+                  <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
+                  <Bar dataKey="progress" background={{ fill: 'hsl(var(--muted))' }} radius={[4, 4, 4, 4]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>This Week&apos;s Study Hours</CardTitle>
+            <CardDescription>Your daily study time for the current week.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={{ hours: { label: 'Hours', color: 'hsl(var(--primary))'}}} className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={weeklyStudyData}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
+                        <YAxis />
+                        <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
+                        <Bar dataKey="hours" fill="hsl(var(--primary))" radius={4} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

@@ -34,8 +34,36 @@ export function WeeklyGoals() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>This Week's Goals</CardTitle>
-                <CardDescription>Your main targets for {format(new Date(weekStart), 'do MMM')} - {format(new Date(weekEnd), 'do MMM')}</CardDescription>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>This Week's Goals</CardTitle>
+                        <CardDescription>Your main targets for {format(new Date(weekStart), 'do MMM')} - {format(new Date(weekEnd), 'do MMM')}</CardDescription>
+                    </div>
+                    {allTargets.length > 3 && (
+                        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="link" size="sm" className="p-0 h-auto">View all</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>All Chapter Targets for the Week</DialogTitle>
+                                </DialogHeader>
+                                <ul className="space-y-3 py-4">
+                                    {allTargets.map(t => {
+                                        const subject = subjects.find(s => s.id === t.subjectId);
+                                        if (!subject) return null;
+                                        return (
+                                            <li key={t.subjectId} className="flex justify-between items-center">
+                                                <span style={{ color: subject.color }}>{shortenSubjectName(subject.name)}</span>
+                                                <span className='font-semibold'>{t.chaptersToComplete} chapters</span>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </DialogContent>
+                        </Dialog>
+                    )}
+                </div>
             </CardHeader>
             <CardContent>
                 {currentWeeklyGoal ? (
@@ -54,30 +82,6 @@ export function WeeklyGoals() {
                                     );
                                 }) : <p className="text-sm text-muted-foreground">No chapter targets set.</p>}
                             </ul>
-                            {allTargets.length > 3 && (
-                                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button variant="link" size="sm" className="p-0 h-auto mt-2">View all</Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>All Chapter Targets</DialogTitle>
-                                        </DialogHeader>
-                                        <ul className="space-y-3 py-4">
-                                            {allTargets.map(t => {
-                                                const subject = subjects.find(s => s.id === t.subjectId);
-                                                if (!subject) return null;
-                                                return (
-                                                    <li key={t.subjectId} className="flex justify-between items-center text-sm">
-                                                        <span style={{ color: subject.color }}>{shortenSubjectName(subject.name)}</span>
-                                                        <span className='font-semibold'>{t.chaptersToComplete} chapters</span>
-                                                    </li>
-                                                );
-                                            })}
-                                        </ul>
-                                    </DialogContent>
-                                </Dialog>
-                            )}
                         </div>
                         <div className="space-y-4">
                             <div>

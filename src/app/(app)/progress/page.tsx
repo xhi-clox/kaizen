@@ -20,7 +20,7 @@ const CustomYAxisTick = (props: any) => {
             textAnchor="end" 
             verticalAnchor="middle" 
             fill="hsl(var(--foreground))" 
-            className="text-xs sm:text-sm"
+            className="text-xs"
         >
             {payload.value}
         </Text>
@@ -57,7 +57,6 @@ export default function ProgressPage() {
     if (!subjects) return [];
     
     const shortenName = (name: string) => {
-        if (name.includes('ICT')) return 'ICT';
         if (name.includes('Information')) return 'ICT';
         
         const replacements: {[key: string]: string} = {
@@ -146,14 +145,13 @@ export default function ProgressPage() {
                 data={subjectProgressData} 
                 layout="vertical" 
                 margin={{ left: 10, right: 30, top: 10, bottom: 10, }}
-                className="[&_.recharts-cartesian-axis-tick_text]:text-xs sm:[&_.recharts-cartesian-axis-tick_text]:text-sm"
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" domain={[0, 100]} unit="%" />
+              <XAxis type="number" domain={[0, 100]} unit="%" tick={{fontSize: 12}} />
               <YAxis 
                 type="category" 
                 dataKey="name" 
-                width={60}
+                width={80}
                 tickLine={false} 
                 axisLine={false}
                 tick={<CustomYAxisTick />}
@@ -178,8 +176,8 @@ export default function ProgressPage() {
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={weeklyStudyData}>
                         <CartesianGrid vertical={false} />
-                        <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} className="text-xs sm:text-sm" />
-                        <YAxis className="text-xs sm:text-sm" />
+                        <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} tick={{fontSize: 12}} />
+                        <YAxis tick={{fontSize: 12}} />
                         <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
                         <Bar dataKey="hours" fill="hsl(var(--primary))" radius={4} />
                     </BarChart>
@@ -258,5 +256,4 @@ export default function ProgressPage() {
       )}
     </div>
   );
-
-    
+}

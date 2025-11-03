@@ -7,7 +7,7 @@ import { useMemo } from 'react';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { Button } from '../ui/button';
 import Link from 'next/link';
-import { Calendar, Target } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 export function WeeklyGoals() {
     const [goals] = useGoals();
@@ -24,8 +24,8 @@ export function WeeklyGoals() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>This Week's Goals ({format(new Date(weekStart), 'do MMM')} - {format(new Date(weekEnd), 'do MMM')})</CardTitle>
-                <CardDescription>Your main targets for this week.</CardDescription>
+                <CardTitle>This Week's Goals</CardTitle>
+                <CardDescription>Your main targets for {format(new Date(weekStart), 'do MMM')} - {format(new Date(weekEnd), 'do MMM')}</CardDescription>
             </CardHeader>
             <CardContent>
                 {currentWeeklyGoal ? (
@@ -33,7 +33,7 @@ export function WeeklyGoals() {
                         <div>
                             <h4 className="font-medium mb-2 text-muted-foreground">Chapter Targets</h4>
                             <ul className="space-y-2">
-                                {currentWeeklyGoal.targets.map(t => {
+                                {currentWeeklyGoal.targets.length > 0 ? currentWeeklyGoal.targets.map(t => {
                                     const subject = subjects.find(s => s.id === t.subjectId);
                                     if (!subject) return null;
                                     return (
@@ -42,7 +42,7 @@ export function WeeklyGoals() {
                                             <span className='font-semibold'>{t.chaptersToComplete} chapters</span>
                                         </li>
                                     );
-                                })}
+                                }) : <p className="text-sm text-muted-foreground">No chapter targets set.</p>}
                             </ul>
                         </div>
                         <div className="space-y-4">

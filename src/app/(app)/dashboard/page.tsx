@@ -13,6 +13,8 @@ import { TodaysGoals } from '@/components/dashboard/todays-goals';
 import { SubjectProgressList } from '@/components/dashboard/subject-progress-list';
 import { RecentSessions } from '@/components/dashboard/recent-sessions';
 import { Skeleton } from '@/components/ui/skeleton';
+import { WeeklyGoals } from '@/components/dashboard/weekly-goals';
+import { MonthlyGoals } from '@/components/dashboard/monthly-goals';
 
 export default function DashboardPage() {
   const [profile, setProfile, loadingProfile] = useProfile();
@@ -90,8 +92,10 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 space-y-6">
           <TodaysGoals />
+          <WeeklyGoals />
+          <MonthlyGoals />
         </div>
         <div className="lg:col-span-2">
           <RecentSessions />

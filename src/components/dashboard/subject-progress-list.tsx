@@ -45,7 +45,7 @@ export function SubjectProgressList() {
                         {subjectsWithProgress.map(subject => (
                             <div key={subject.id}>
                                 <div className="flex justify-between items-center mb-1">
-                                    <Link href={`/subjects#${subject.id}`} className="font-medium hover:underline" style={{color: subject.color}}>{subject.name}</Link>
+                                    <Link href={`/subjects#${subject.id}`} className="font-medium hover:underline">{subject.name}</Link>
                                     <span className="text-sm text-muted-foreground">{subject.progress}%</span>
                                 </div>
                                 <Progress value={subject.progress} indicatorColor={subject.color} />

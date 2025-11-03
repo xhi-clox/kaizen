@@ -1,10 +1,10 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAppData } from '@/hooks/use-app-data';
-import { BookCopy, PlusCircle, Timer } from 'lucide-react';
+import { BookCopy, Timer } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 import { Countdown } from '@/components/dashboard/countdown';
 import { QuickStats } from '@/components/dashboard/quick-stats';
@@ -14,6 +14,7 @@ import { RecentSessions } from '@/components/dashboard/recent-sessions';
 
 export default function DashboardPage() {
   const { profile } = useAppData();
+  const [quote, setQuote] = useState('');
 
   const motivationalQuotes = [
     "Success is the sum of small efforts repeated daily.",
@@ -21,7 +22,10 @@ export default function DashboardPage() {
     "You're preparing for your future!",
     "Believe you can and you're halfway there.",
   ];
-  const quote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+
+  useEffect(() => {
+    setQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
+  }, []);
 
 
   return (

@@ -55,9 +55,15 @@ export default function WelcomePage() {
     resolver: zodResolver(FormSchema),
     defaultValues: {
       name: '',
-      examDate: new Date(new Date().setMonth(new Date().getMonth() + 6)),
+      examDate: undefined, // Set to undefined initially to avoid hydration mismatch
     },
   });
+
+  // Set default exam date on client side
+  useState(() => {
+    form.setValue('examDate', new Date(new Date().setMonth(new Date().getMonth() + 6)));
+  });
+
 
   function handleQuickStart(values: z.infer<typeof FormSchema>) {
     setLoading('quick');
@@ -176,7 +182,7 @@ export default function WelcomePage() {
                 <Button 
                     type="button" 
                     onClick={form.handleSubmit(handleQuickStart)}
-                    disabled={!!loading}
+                    disabled={!!loading || !form.formState.isValid}
                     className="w-full"
                 >
                   <Rocket />
@@ -186,7 +192,7 @@ export default function WelcomePage() {
                     type="button" 
                     onClick={form.handleSubmit(handleFreshStart)}
                     variant="secondary"
-                    disabled={!!loading}
+                    disabled={!!loading || !form.formState.isValid}
                     className="w-full"
                 >
                   <Sparkles />

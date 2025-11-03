@@ -54,7 +54,7 @@ export function useAuth() {
         };
         
         const userDocRef = doc(firestore, 'users', user.uid);
-        await setDoc(userDocRef, { userProfile });
+        await setDoc(userDocRef, userProfile);
 
         return userCredential;
     };

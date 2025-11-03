@@ -60,6 +60,7 @@ import { z } from 'zod';
 import type { Subject, Chapter, Topic, UserProgress } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { generateAndSeedSyllabus } from '@/ai/flows/generate-syllabus-flow';
 
 const chapterSchema = z.object({
   name: z.string().min(1, 'Chapter name is required.'),
@@ -226,6 +227,7 @@ export default function SubjectsPage() {
   const [subjects, { update: updateSubject }, loadingSubjects] = useSubjects();
   const [progress, setProgress] = useProgress();
   const { toast } = useToast();
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const subjectsWithProgress = useMemo(() => {
     if (!subjects) return [];
@@ -300,6 +302,32 @@ export default function SubjectsPage() {
     setProgress({ ...progress, [topicId]: newProgress });
   }
 
+  const handleSeedSyllabus = async () => {
+    setIsSeeding(true);
+    toast({
+        title: 'Seeding Syllabus...',
+        description: 'Please wait while we populate the database with the official HSC syllabus.',
+    });
+    try {
+        const result = await generateAndSeedSyllabus();
+        toast({
+            title: 'Syllabus Seeded Successfully!',
+            description: `${result.subjectCount} subjects have been loaded into the database. The page will now reload.`,
+        });
+        // Force a reload to fetch new data
+        window.location.reload();
+    } catch (error) {
+        console.error("Syllabus seeding failed:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Seeding Failed',
+            description: 'There was an error populating the syllabus. Please try again.',
+        });
+    } finally {
+        setIsSeeding(false);
+    }
+  }
+
 
   if (loadingSubjects) {
     return (
@@ -327,7 +355,10 @@ export default function SubjectsPage() {
                 <div className="flex flex-col items-center justify-center gap-4 text-center py-10 border-2 border-dashed rounded-lg">
                     <BookCopy className="w-12 h-12 text-muted-foreground" />
                     <p className="font-semibold">The syllabus has not been loaded into the database.</p>
-                    <p className="text-sm text-muted-foreground">Please ask your administrator to seed the syllabus.</p>
+                    <p className="text-sm text-muted-foreground">Please click the button below to seed the official syllabus.</p>
+                    <Button onClick={handleSeedSyllabus} disabled={isSeeding}>
+                        {isSeeding ? 'Seeding...' : 'Seed Syllabus'}
+                    </Button>
                 </div>
             </CardContent>
         </Card>

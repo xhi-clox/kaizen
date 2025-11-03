@@ -47,6 +47,7 @@ export default function StudySessionPage() {
   const { toast } = useToast();
 
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [sessionNotes, setSessionNotes] = useState('');
 
@@ -100,11 +101,17 @@ export default function StudySessionPage() {
   }, [settings?.pomodoro.work, isActive]);
 
 
-  const availableTopics = useMemo(() => {
+  const availableChapters = useMemo(() => {
     if (!selectedSubject) return [];
     const subject = subjects.find((s) => s.id === selectedSubject);
-    return subject ? (subject.chapters || []).flatMap((c) => c.topics || []) : [];
+    return subject ? subject.chapters || [] : [];
   }, [selectedSubject, subjects]);
+
+  const availableTopics = useMemo(() => {
+    if (!selectedChapter) return [];
+    const chapter = availableChapters.find((c) => c.id === selectedChapter);
+    return chapter ? chapter.topics || [] : [];
+  }, [selectedChapter, availableChapters]);
 
 
   const handleSessionEnd = useCallback(() => {
@@ -293,6 +300,7 @@ export default function StudySessionPage() {
                 value={selectedSubject || ''}
                 onValueChange={(val) => {
                   setSelectedSubject(val);
+                  setSelectedChapter(null);
                   setSelectedTopic(null);
                 }}
               >
@@ -307,11 +315,31 @@ export default function StudySessionPage() {
                   ))}
                 </SelectContent>
               </Select>
+              
+              <Select
+                value={selectedChapter || ''}
+                onValueChange={(val) => {
+                    setSelectedChapter(val);
+                    setSelectedTopic(null);
+                }}
+                disabled={!selectedSubject}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a chapter" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableChapters.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               <Select
                 value={selectedTopic || ''}
                 onValueChange={setSelectedTopic}
-                disabled={!selectedSubject}
+                disabled={!selectedChapter}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a topic" />

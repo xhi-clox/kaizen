@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useAppData } from '@/hooks/use-app-data';
+import { useProfile } from '@/hooks/use-app-data';
 import { BookCopy, Timer } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -13,7 +13,7 @@ import { SubjectProgressList } from '@/components/dashboard/subject-progress-lis
 import { RecentSessions } from '@/components/dashboard/recent-sessions';
 
 export default function DashboardPage() {
-  const { profile } = useAppData();
+  const [profile] = useProfile();
   const [quote, setQuote] = useState('');
   const [isClient, setIsClient] = useState(false);
 
@@ -34,7 +34,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-            {isClient ? (
+            {isClient && profile ? (
               <>Welcome back, <span className="hsc-gradient-text">{profile.name}!</span></>
             ) : (
               <>Welcome back!</>

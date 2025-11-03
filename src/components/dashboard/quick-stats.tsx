@@ -4,7 +4,7 @@ import { useSubjects, useStudySessions, useGoals } from '@/hooks/use-app-data';
 import { Card, CardContent } from '@/components/ui/card';
 import { BarChart, CheckCircle, Flame } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { format, startOfWeek, isSameDay } from 'date-fns';
+import { startOfWeek, isSameDay } from 'date-fns';
 
 const StatCard = ({ icon, label, value, colorClass }: { icon: React.ReactNode, label: string, value: string, colorClass: string }) => (
     <Card className="flex-1">
@@ -31,14 +31,15 @@ export function QuickStats() {
     }, []);
 
     const overallCompletion = useMemo(() => {
-        if (!subjects.length) return 0;
+        if (!subjects?.length) return 0;
         const totalTopics = subjects.reduce((acc, subject) => acc + subject.chapters.reduce((chapAcc, chap) => chapAcc + chap.topics.length, 0), 0);
+        if (totalTopics === 0) return 0;
         const completedTopics = subjects.reduce((acc, subject) => acc + subject.chapters.reduce((chapAcc, chap) => chapAcc + chap.topics.filter(t => t.status === 'completed').length, 0), 0);
-        return totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
+        return Math.round((completedTopics / totalTopics) * 100);
     }, [subjects]);
 
     const weeklyStudyHours = useMemo(() => {
-        if (!isClient) return 0;
+        if (!isClient || !sessions) return '0.0';
         const weekStart = startOfWeek(new Date(), { weekStartsOn: 6 }); // Saturday
         const weekSessions = sessions.filter(s => new Date(s.date) >= weekStart);
         const totalMinutes = weekSessions.reduce((acc, s) => acc + s.duration, 0);
@@ -46,7 +47,7 @@ export function QuickStats() {
     }, [sessions, isClient]);
     
     const studyStreak = useMemo(() => {
-        if (!goals.daily.length) return 0;
+        if (!goals?.daily.length) return 0;
         let streak = 0;
         let currentDate = new Date();
         const sortedGoals = [...goals.daily].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -60,7 +61,7 @@ export function QuickStats() {
             }
         }
         return streak;
-    }, [goals.daily]);
+    }, [goals?.daily]);
 
     if (!isClient) {
         return <div className="grid gap-4 md:grid-cols-3 lg:col-span-2">

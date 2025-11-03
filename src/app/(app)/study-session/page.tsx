@@ -16,10 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useSettings, useSubjects, useStudySessions } from '@/hooks/use-app-data';
+import { useSettings, useSubjects, useStudySessions, useProfile } from '@/hooks/use-app-data';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Play, Pause, RefreshCw, SkipForward } from 'lucide-react';
-import type { StudySession, Topic } from '@/lib/types';
+import type { StudySession, Topic, Subject } from '@/lib/types';
 import { nanoid } from 'nanoid';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
@@ -41,8 +41,8 @@ type SessionType = 'work' | 'shortBreak' | 'longBreak';
 
 export default function StudySessionPage() {
   const [settings] = useSettings();
-  const [subjects, setSubjects] = useSubjects();
-  const [sessions, setSessions] = useStudySessions();
+  const [subjects, { update: updateSubject }] = useSubjects();
+  const [addSession] = useStudySessions();
   const { toast } = useToast();
 
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -54,7 +54,7 @@ export default function StudySessionPage() {
   const [isActive, setIsActive] = useState(false);
 
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
-  const [lastCompletedSession, setLastCompletedSession] = useState<{subjectId: string, topicId: string} | null>(null);
+  const [lastCompletedSession, setLastCompletedSession] = useState<{subjectId: string, topicId: string, subject: Subject} | null>(null);
 
   const [manualDuration, setManualDuration] = useState(settings.pomodoro.work);
 
@@ -93,10 +93,10 @@ export default function StudySessionPage() {
 
   // When settings change, update manual duration if timer is not active
   useEffect(() => {
-    if (!isActive) {
+    if (!isActive && settings) {
       setManualDuration(settings.pomodoro.work);
     }
-  }, [settings.pomodoro.work, isActive]);
+  }, [settings?.pomodoro.work, isActive]);
 
 
   const availableTopics = useMemo(() => {
@@ -111,8 +111,10 @@ export default function StudySessionPage() {
     
     if (sessionType === 'work') {
         if (selectedSubject && selectedTopic) {
-            const newSession: StudySession = {
-                id: nanoid(),
+            const subject = subjects.find(s => s.id === selectedSubject);
+            if (!subject) return;
+
+            const newSession: Omit<StudySession, 'id'> = {
                 date: Date.now(),
                 subjectId: selectedSubject,
                 topicId: selectedTopic,
@@ -121,10 +123,10 @@ export default function StudySessionPage() {
                 notes: sessionNotes,
                 productive: true,
             };
-            setSessions(prev => [...prev, newSession]);
+            addSession(newSession);
             toast({ title: "Study session logged!", description: `${manualDuration} minutes of focused work.` });
             
-            setLastCompletedSession({ subjectId: selectedSubject, topicId: selectedTopic });
+            setLastCompletedSession({ subjectId: selectedSubject, topicId: selectedTopic, subject });
             setShowCompletionDialog(true);
             setSessionNotes('');
         } else {
@@ -136,7 +138,7 @@ export default function StudySessionPage() {
         toast({ title: "Break's over! Time to focus.", variant: 'default' });
         setTimeLeft(getTimerDuration());
     }
-  }, [sessionType, selectedSubject, selectedTopic, manualDuration, sessionNotes, setSessions, toast, getTimerDuration]);
+  }, [sessionType, selectedSubject, selectedTopic, manualDuration, sessionNotes, addSession, toast, getTimerDuration, subjects]);
 
   const moveToNextSessionType = () => {
     const newSessionCount = sessionCount + 1;
@@ -153,23 +155,19 @@ export default function StudySessionPage() {
 
   const handleUpdateTopicStatus = (markAsComplete: boolean) => {
     if (markAsComplete && lastCompletedSession) {
-      setSubjects(prevSubjects => 
-        prevSubjects.map(s => 
-          s.id === lastCompletedSession.subjectId 
-            ? {
-              ...s,
-              chapters: s.chapters.map(c => ({
+        const { subject, topicId } = lastCompletedSession;
+        const updatedSubject = {
+            ...subject,
+            chapters: subject.chapters.map(c => ({
                 ...c,
                 topics: c.topics.map(t => 
-                  t.id === lastCompletedSession.topicId 
-                  ? { ...t, status: 'completed', completedDate: Date.now() } 
-                  : t
+                    t.id === topicId 
+                    ? { ...t, status: 'completed', completedDate: Date.now() } 
+                    : t
                 )
-              }))
-            }
-            : s
-        )
-      );
+            }))
+        };
+      updateSubject(subject.id, updatedSubject);
       toast({ title: "Topic marked as completed!" });
     }
     setShowCompletionDialog(false);
@@ -372,5 +370,3 @@ export default function StudySessionPage() {
     </div>
   );
 }
-
-    

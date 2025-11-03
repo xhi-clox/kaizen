@@ -12,7 +12,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { Edit, Flag, Target, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 
@@ -28,24 +28,31 @@ const examGoalSchema = z.object({
 });
 
 function ExamGoals() {
-  const [{ examDate: profileExamDate, targetGPA: profileGpa }, setProfile] = useProfile();
+  const [profile, setProfile] = useProfile();
   const [goals, setGoals] = useGoals();
   const [subjects] = useSubjects();
   const [open, setOpen] = useState(false);
 
   const form = useForm<z.infer<typeof examGoalSchema>>({
     resolver: zodResolver(examGoalSchema),
-    defaultValues: {
-      targetGPA: goals.exam.targetGPA || profileGpa,
-      examDate: goals.exam.examDate || profileExamDate,
-      subjectTargets: subjects.map(s => {
-        const existing = goals.exam.subjectTargets.find(t => t.subjectId === s.id);
-        return existing || { subjectId: s.id, targetMarks: 80 };
-      }),
-    },
+    defaultValues: goals?.exam,
   });
 
-  const { fields, append, remove } = useFieldArray({
+  useEffect(() => {
+    if (goals && subjects.length > 0) {
+      const defaultValues = {
+        targetGPA: goals.exam.targetGPA || profile.targetGPA,
+        examDate: goals.exam.examDate || profile.examDate,
+        subjectTargets: subjects.map(s => {
+          const existing = goals.exam.subjectTargets.find(t => t.subjectId === s.id);
+          return existing || { subjectId: s.id, targetMarks: 80 };
+        }),
+      }
+      form.reset(defaultValues);
+    }
+  }, [goals, subjects, profile, form]);
+
+  const { fields } = useFieldArray({
     control: form.control,
     name: 'subjectTargets',
   });
@@ -56,7 +63,9 @@ function ExamGoals() {
     setOpen(false);
   };
 
-  const gpaProgress = ((goals.exam.targetGPA || 0) / 5) * 100;
+  const gpaProgress = ((goals?.exam.targetGPA || 0) / 5) * 100;
+
+  if (!goals) return <p>Loading goals...</p>
 
   return (
     <Card>

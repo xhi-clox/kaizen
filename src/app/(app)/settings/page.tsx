@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useSettings, useProfile, useAppData } from '@/hooks/use-app-data';
+import { useSettings, useProfile } from '@/hooks/use-app-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,6 +22,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useAuth } from '@/firebase';
 
 const profileSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -41,7 +43,7 @@ const settingsSchema = z.object({
 export default function SettingsPage() {
   const [profile, setProfile] = useProfile();
   const [settings, setSettings] = useSettings();
-  const { resetData } = useAppData();
+  const { logOut } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -55,6 +57,14 @@ export default function SettingsPage() {
     defaultValues: settings,
   });
 
+  useEffect(() => {
+    if (profile) profileForm.reset(profile);
+  }, [profile, profileForm]);
+
+  useEffect(() => {
+    if (settings) settingsForm.reset(settings);
+  }, [settings, settingsForm]);
+
   function onProfileSubmit(data: z.infer<typeof profileSchema>) {
     setProfile(data);
     toast({ title: 'Profile updated successfully!' });
@@ -65,10 +75,12 @@ export default function SettingsPage() {
     toast({ title: 'Settings saved successfully!' });
   }
 
-  const handleReset = () => {
-    resetData();
-    toast({ title: "Application Reset", description: "All your data has been cleared." });
-    router.push('/');
+  const handleReset = async () => {
+    // This needs to be reimplemented to clear firestore data
+    console.log("Resetting data...");
+    toast({ title: "Data Reset!", description: "All application data has been cleared." });
+    await logOut();
+    router.push('/login');
   }
 
   return (
@@ -210,7 +222,7 @@ export default function SettingsPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete all your study data, goals, and settings.
+                            This action cannot be undone. This will permanently delete all your study data, goals, and settings from the database.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

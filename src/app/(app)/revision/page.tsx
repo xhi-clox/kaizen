@@ -20,6 +20,7 @@ export default function RevisionPage() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const allTopics = useMemo(() => {
+    if (!subjects || !sessions) return [];
     return subjects.flatMap(subject => 
         subject.chapters.flatMap(chapter => 
             chapter.topics.map(topic => {

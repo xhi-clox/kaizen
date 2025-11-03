@@ -18,13 +18,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -41,7 +38,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -57,10 +53,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useSubjects } from '@/hooks/use-app-data';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { BookCopy, CheckCircle, Edit, PlusCircle, Trash2, BrainCircuit } from 'lucide-react';
+import { BookCopy, Edit, PlusCircle, Trash2, BrainCircuit } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -78,27 +73,11 @@ const subjectSchema = z.object({
   totalChapters: z.coerce.number().min(1, 'Must have at least one chapter.'),
 });
 
-const chapterSchema = z.object({
-  name: z.string().min(1, 'Chapter name is required.'),
-});
-
-const topicSchema = z.object({
-  name: z.string().min(1, 'Topic name is required.'),
-  priority: z.enum(['low', 'medium', 'high']),
-});
-
-const statusColors = {
-  'not-started': 'bg-gray-200 text-gray-800',
-  'in-progress': 'bg-yellow-200 text-yellow-800',
-  completed: 'bg-green-200 text-green-800',
-  revision: 'bg-purple-200 text-purple-800',
-};
-
 function SubjectForm({
   onSave,
   subject,
 }: {
-  onSave: (data: Subject) => void;
+  onSave: (data: Omit<Subject, 'id' | 'chapters'> & { totalChapters: number }) => void;
   subject?: Subject;
 }) {
   const [open, setOpen] = useState(false);
@@ -119,19 +98,7 @@ function SubjectForm({
       form.setError('name', { message: 'Subject already exists.'});
       return;
     }
-
-    const newSubjectData: Subject = {
-      id: subject?.id || nanoid(),
-      chapters:
-        subject?.chapters ||
-        Array.from({ length: data.totalChapters }, (_, i) => ({
-          id: nanoid(),
-          name: `Chapter ${i + 1}`,
-          topics: [],
-        })),
-      ...data,
-    };
-    onSave(newSubjectData);
+    onSave(data);
     setOpen(false);
     form.reset();
   };
@@ -285,11 +252,12 @@ function TopicItem({
 }
 
 export default function SubjectsPage() {
-  const [subjects, setSubjects] = useSubjects();
+  const [subjects, { add, update, remove }] = useSubjects();
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   const subjectsWithProgress = useMemo(() => {
+    if (!subjects) return [];
     return subjects.map((subject) => {
       const allTopics = subject.chapters.flatMap((c) => c.topics);
       const completedTopics = allTopics.filter(
@@ -303,36 +271,24 @@ export default function SubjectsPage() {
     });
   }, [subjects]);
 
-  const handleAddSubject = (subject: Subject) => {
-    setSubjects([...subjects, subject]);
+  const handleAddSubject = (data: Omit<Subject, 'id' | 'chapters'> & { totalChapters: number }) => {
+    const newSubject: Omit<Subject, 'id'> = {
+      ...data,
+      chapters: Array.from({ length: data.totalChapters }, (_, i) => ({
+          id: nanoid(),
+          name: `Chapter ${i + 1}`,
+          topics: [],
+        })),
+    };
+    add(newSubject);
   };
 
-  const handleUpdateSubject = (updatedSubject: Subject) => {
-    setSubjects(
-      subjects.map((s) => (s.id === updatedSubject.id ? updatedSubject : s))
-    );
+  const handleUpdateSubject = (subjectId: string, data: Partial<Subject>) => {
+    update(subjectId, data);
   };
 
   const handleDeleteSubject = (subjectId: string) => {
-    setSubjects(subjects.filter((s) => s.id !== subjectId));
-  };
-
-  const handleUpdateChapter = (
-    subjectId: string,
-    updatedChapter: Chapter
-  ) => {
-    setSubjects(
-      subjects.map((s) =>
-        s.id === subjectId
-          ? {
-              ...s,
-              chapters: s.chapters.map((c) =>
-                c.id === updatedChapter.id ? updatedChapter : c
-              ),
-            }
-          : s
-      )
-    );
+    remove(subjectId);
   };
 
   const handleUpdateTopic = (
@@ -340,42 +296,39 @@ export default function SubjectsPage() {
     chapterId: string,
     updatedTopic: Topic
   ) => {
-    setSubjects(
-      subjects.map((s) =>
-        s.id === subjectId
-          ? {
-              ...s,
-              chapters: s.chapters.map((c) =>
-                c.id === chapterId
-                  ? {
-                      ...c,
-                      topics: c.topics.map((t) =>
-                        t.id === updatedTopic.id ? updatedTopic : t
-                      ),
-                    }
-                  : c
-              ),
-            }
-          : s
-      )
-    );
+    const subject = subjects.find(s => s.id === subjectId);
+    if (!subject) return;
+
+    const updatedChapters = subject.chapters.map(c => c.id === chapterId ? {
+        ...c,
+        topics: c.topics.map(t => t.id === updatedTopic.id ? updatedTopic : t)
+    } : c);
+
+    update(subjectId, { chapters: updatedChapters });
   };
   
-  const handleAddTopic = (subjectId: string, chapterId: string, topic: Topic) => {
-    setSubjects(
-      subjects.map((s) =>
-        s.id === subjectId
-          ? {
-              ...s,
-              chapters: s.chapters.map((c) =>
-                c.id === chapterId
-                  ? { ...c, topics: [...c.topics, topic] }
-                  : c
-              ),
-            }
-          : s
-      )
-    );
+  const handleAddTopic = (subjectId: string, chapterId: string, topicName: string) => {
+    const subject = subjects.find(s => s.id === subjectId);
+    if (!subject) return;
+
+    const newTopic: Topic = {
+        id: nanoid(),
+        name: topicName,
+        status: 'not-started',
+        priority: 'medium',
+        difficulty: null,
+        completedDate: null,
+        revisionDates: [],
+        timeSpent: 0,
+        notes: '',
+    };
+    
+    const updatedChapters = subject.chapters.map(c => c.id === chapterId ? {
+        ...c,
+        topics: [...c.topics, newTopic]
+    } : c);
+
+    update(subjectId, { chapters: updatedChapters });
   };
 
   const handleGenerateSyllabus = async () => {
@@ -386,7 +339,11 @@ export default function SubjectsPage() {
     });
     try {
         const result = await generateSyllabus({ curriculumName: 'NCTB HSC Science Group' });
-        setSubjects(result.subjects as Subject[]);
+        // Clear existing subjects
+        subjects.forEach(s => remove(s.id));
+        // Add new subjects
+        result.subjects.forEach(subject => add(subject as Omit<Subject, 'id'>));
+
         toast({
             title: 'Syllabus Generated!',
             description: 'Your new AI-generated syllabus has been loaded.',
@@ -409,7 +366,6 @@ export default function SubjectsPage() {
         <Card>
             <CardHeader>
                 <CardTitle>Subjects & Syllabus</CardTitle>
-                <CardDescription>Manage your subjects, chapters, and topics to track your progress.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="flex flex-col items-center justify-center gap-4 text-center py-10 border-2 border-dashed rounded-lg">
@@ -468,67 +424,65 @@ export default function SubjectsPage() {
                 </div>
             </AccordionTrigger>
             <AccordionContent className="p-4 pt-0">
-                <Card>
-                    <CardHeader className="flex-row items-center justify-end gap-2 p-2">
-                        <SubjectForm
-                            subject={subject}
-                            onSave={handleUpdateSubject}
-                        />
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                This will permanently delete the subject &quot;{subject.name}&quot; and all its chapters and topics. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>
-                                Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0 space-y-2">
-                      {subject.chapters.map((chapter) => (
-                          <Accordion
-                          key={chapter.id}
-                          type="single"
-                          collapsible
-                          className="border rounded-md px-4"
-                          >
-                          <AccordionItem value={chapter.id} className="border-b-0">
-                              <AccordionTrigger>
-                              {chapter.name}
-                              </AccordionTrigger>
-                              <AccordionContent className="space-y-2">
-                              {chapter.topics.map((topic) => (
-                                  <TopicItem
-                                  key={topic.id}
-                                  topic={topic}
-                                  onUpdate={(updatedTopic) =>
-                                      handleUpdateTopic(
-                                      subject.id,
-                                      chapter.id,
-                                      updatedTopic
-                                      )
-                                  }
-                                  />
-                              ))}
-                              <AddTopicForm subjectId={subject.id} chapterId={chapter.id} onAddTopic={handleAddTopic} />
-                              </AccordionContent>
-                          </AccordionItem>
-                          </Accordion>
-                      ))}
-                    </CardContent>
-                </Card>
+                <div className="p-2 flex justify-end gap-2">
+                    <SubjectForm
+                        subject={subject}
+                        onSave={(data) => handleUpdateSubject(subject.id, data)}
+                    />
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                            This will permanently delete the subject &quot;{subject.name}&quot; and all its chapters and topics. This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>
+                            Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+                <div className="p-4 pt-0 space-y-2">
+                  {subject.chapters.map((chapter) => (
+                      <Accordion
+                      key={chapter.id}
+                      type="single"
+                      collapsible
+                      className="border rounded-md px-4"
+                      >
+                      <AccordionItem value={chapter.id} className="border-b-0">
+                          <AccordionTrigger>
+                          {chapter.name}
+                          </AccordionTrigger>
+                          <AccordionContent className="space-y-2">
+                          {chapter.topics.map((topic) => (
+                              <TopicItem
+                              key={topic.id}
+                              topic={topic}
+                              onUpdate={(updatedTopic) =>
+                                  handleUpdateTopic(
+                                  subject.id,
+                                  chapter.id,
+                                  updatedTopic
+                                  )
+                              }
+                              />
+                          ))}
+                          <AddTopicForm subjectId={subject.id} chapterId={chapter.id} onAddTopic={handleAddTopic} />
+                          </AccordionContent>
+                      </AccordionItem>
+                      </Accordion>
+                  ))}
+                </div>
             </AccordionContent>
           </AccordionItem>
         ))}
@@ -537,7 +491,7 @@ export default function SubjectsPage() {
   );
 }
 
-function AddTopicForm({ subjectId, chapterId, onAddTopic }: { subjectId: string; chapterId: string; onAddTopic: (subjectId: string, chapterId: string, topic: Topic) => void }) {
+function AddTopicForm({ subjectId, chapterId, onAddTopic }: { subjectId: string; chapterId: string; onAddTopic: (subjectId: string, chapterId: string, topicName: string) => void }) {
   const [open, setOpen] = useState(false);
   const form = useForm({
     resolver: zodResolver(z.object({ name: z.string().min(1, 'Topic name is required.') })),
@@ -545,18 +499,7 @@ function AddTopicForm({ subjectId, chapterId, onAddTopic }: { subjectId: string;
   });
 
   const onSubmit = (data: { name: string }) => {
-    const newTopic: Topic = {
-      id: nanoid(),
-      name: data.name,
-      status: 'not-started',
-      priority: 'medium',
-      difficulty: null,
-      completedDate: null,
-      revisionDates: [],
-      timeSpent: 0,
-      notes: '',
-    };
-    onAddTopic(subjectId, chapterId, newTopic);
+    onAddTopic(subjectId, chapterId, data.name);
     setOpen(false);
     form.reset();
   };

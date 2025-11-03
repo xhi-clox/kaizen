@@ -1,5 +1,5 @@
 'use client';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
@@ -16,6 +16,8 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { ThemeToggle } from './theme-toggle';
 import { useProfile } from '@/hooks/use-app-data';
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 const getPageTitle = (pathname: string) => {
     if (pathname.startsWith('/dashboard')) return 'Dashboard';
@@ -31,6 +33,9 @@ const getPageTitle = (pathname: string) => {
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logOut } = useAuth();
+  const { toast } = useToast();
   const [profile] = useProfile();
   const pageTitle = getPageTitle(pathname);
   const [initials, setInitials] = useState('');
@@ -46,8 +51,20 @@ export function Header() {
       }
       return name.substring(0, 2).toUpperCase();
     };
-    setInitials(getInitials(profile.name));
-  }, [profile.name]);
+    if (profile) {
+        setInitials(getInitials(profile.name));
+    }
+  }, [profile]);
+
+  const handleLogout = async () => {
+    try {
+      await logOut();
+      router.push('/login');
+      toast({ title: 'Logged out successfully.' });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Logout failed.' });
+    }
+  }
 
 
   return (
@@ -62,7 +79,7 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-                <AvatarImage src="https://picsum.photos/seed/hsc-user/100/100" alt={profile.name} data-ai-hint="person portrait" />
+                <AvatarImage src="https://picsum.photos/seed/hsc-user/100/100" alt={profile?.name} data-ai-hint="person portrait" />
                 <AvatarFallback>{isClient ? initials : ''}</AvatarFallback>
               </Avatar>
             </Button>
@@ -70,20 +87,20 @@ export function Header() {
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{profile.name}</p>
+                <p className="text-sm font-medium leading-none">{profile?.name}</p>
                 <p className="text-xs leading-none text-muted-foreground">
                   HSC Candidate
                 </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Log out</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
     </header>
   );
 }
+

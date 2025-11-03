@@ -17,6 +17,9 @@ export function TodaysGoals() {
     const todaysGoal = useMemo(() => {
         const goal = goals.daily.find(g => g.date === todayString);
         if (goal) return goal;
+        
+        if (!settings) return null;
+
         return {
             date: todayString,
             studyHours: settings.dailyStudyHoursGoal,
@@ -25,7 +28,11 @@ export function TodaysGoals() {
             actualHours: 0,
             actualTopics: 0
         };
-    }, [goals.daily, todayString, settings.dailyStudyHoursGoal]);
+    }, [goals.daily, todayString, settings]);
+
+    if (!todaysGoal) {
+        return <Card><CardContent><p>Loading today&apos;s goals...</p></CardContent></Card>
+    }
 
     const hoursProgress = todaysGoal.studyHours > 0 ? (todaysGoal.actualHours / todaysGoal.studyHours) * 100 : 100;
     const topicsProgress = todaysGoal.topicsToComplete > 0 ? (todaysGoal.actualTopics / todaysGoal.topicsToComplete) * 100 : 100;

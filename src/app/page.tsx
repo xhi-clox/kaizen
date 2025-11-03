@@ -2,21 +2,22 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppData } from '@/hooks/use-app-data';
+import { useUser } from '@/firebase';
 import { Loader2 } from 'lucide-react';
-import type { UserProfile } from '@/lib/types';
 
 export default function HomePage() {
   const router = useRouter();
-  const { profile, setupQuickStart } = useAppData();
+  const { user, loading } = useUser();
 
   useEffect(() => {
-    // If no profile exists, set up a default one and then navigate.
-    if (!profile.name) {
-      setupQuickStart('HSC Candidate');
+    if (!loading) {
+      if (user) {
+        router.replace('/dashboard');
+      } else {
+        router.replace('/login');
+      }
     }
-    router.replace('/dashboard');
-  }, [router, profile.name, setupQuickStart]);
+  }, [router, user, loading]);
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-background">

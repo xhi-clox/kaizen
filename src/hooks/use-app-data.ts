@@ -1,6 +1,7 @@
 'use client';
 
-import { useLocalStorage } from './use-local-storage';
+import { useUser } from '@/firebase/auth/use-user';
+import { useCollection, useDoc } from '@/firebase/firestore/use-data';
 import {
   defaultProfile,
   defaultSubjects,
@@ -8,7 +9,6 @@ import {
   defaultStudySessions,
   defaultRoutine,
   defaultSettings,
-  sampleSubjects,
 } from '@/lib/data';
 import type {
   UserProfile,
@@ -18,63 +18,66 @@ import type {
   Routine,
   Settings,
 } from '@/lib/types';
-import { useCallback } from 'react';
-import { nanoid } from 'nanoid';
+import { doc, collection } from 'firebase/firestore';
+import { useFirebase } from '@/firebase/provider';
 
-export const useProfile = () => useLocalStorage<UserProfile>('hsc-profile', defaultProfile);
-export const useSubjects = () => useLocalStorage<Subject[]>('hsc-subjects', defaultSubjects);
-export const useGoals = () => useLocalStorage<Goals>('hsc-goals', defaultGoals);
-export const useStudySessions = () => useLocalStorage<StudySession[]>('hsc-sessions', defaultStudySessions);
-export const useRoutine = () => useLocalStorage<Routine>('hsc-routine', defaultRoutine);
-export const useSettings = () => useLocalStorage<Settings>('hsc-settings', defaultSettings);
+
+export const useProfile = () => {
+    const { user, loading: userLoading } = useUser();
+    const { firestore } = useFirebase();
+
+    const userDocRef = user ? doc(firestore, 'users', user.uid) : null;
+    const { data: profile, loading: profileLoading, set } = useDoc<UserProfile>(userDocRef);
+
+    return [profile ?? defaultProfile, set, userLoading || profileLoading] as const;
+}
+
+export const useSubjects = () => {
+    const { user } = useUser();
+    const { data, loading, add, update, remove } = useCollection<Subject>('subjects', user?.uid);
+    return [data, { add, update, remove }, loading] as const;
+}
+
+export const useGoals = () => {
+    const { user } = useUser();
+    const { firestore } = useFirebase();
+    const goalsDocRef = user ? doc(firestore, 'users', user.uid, 'data', 'goals') : null;
+    const { data, loading, set } = useDoc<Goals>(goalsDocRef);
+    
+    return [data ?? defaultGoals, set, loading] as const;
+}
+
+export const useStudySessions = () => {
+    const { user } = useUser();
+    const { data, loading, add } = useCollection<StudySession>('sessions', user?.uid);
+    return [data, add, loading] as const;
+}
+
+export const useRoutine = () => {
+    const { user } = useUser();
+    const { firestore } = useFirebase();
+    const routineDocRef = user ? doc(firestore, 'users', user.uid, 'data', 'routine') : null;
+    const { data, loading, set } = useDoc<Routine>(routineDocRef);
+
+    return [data ?? defaultRoutine, set, loading] as const;
+}
+
+export const useSettings = () => {
+    const { user } = useUser();
+    const { firestore } = useFirebase();
+    const settingsDocRef = user ? doc(firestore, 'users', user.uid, 'data', 'settings') : null;
+    const { data, loading, set } = useDoc<Settings>(settingsDocRef);
+    return [data ?? defaultSettings, set, loading] as const;
+}
+
 
 export function useAppData() {
   const [profile, setProfile] = useProfile();
-  const [subjects, setSubjects] = useSubjects();
+  const [subjects, subjectActions] = useSubjects();
   const [goals, setGoals] = useGoals();
-  const [sessions, setSessions] = useStudySessions();
+  const [sessions, addSession] = useStudySessions();
   const [routine, setRoutine] = useRoutine();
   const [settings, setSettings] = useSettings();
-
-  const setupQuickStart = useCallback((name: string) => {
-    const newProfile = { ...defaultProfile, name };
-    setProfile(newProfile);
-    const subjectsWithIds = sampleSubjects.map(s => ({...s, id: nanoid()}));
-    setSubjects(subjectsWithIds);
-    setGoals(prev => ({
-        ...prev,
-        exam: {
-            ...prev.exam,
-            examDate: newProfile.examDate,
-            targetGPA: 5.0,
-            subjectTargets: subjectsWithIds.map(s => ({ subjectId: s.id, targetMarks: 85 }))
-        }
-    }));
-  }, [setProfile, setSubjects, setGoals]);
-
-  const setupFreshStart = useCallback((name: string) => {
-    const newProfile = { ...defaultProfile, name };
-    setProfile(newProfile);
-    setSubjects(defaultSubjects);
-     setGoals(prev => ({
-        ...prev,
-        exam: {
-            ...prev.exam,
-            examDate: newProfile.examDate,
-            targetGPA: 5.0,
-            subjectTargets: []
-        }
-    }));
-  }, [setProfile, setSubjects, setGoals]);
-
-  const resetData = useCallback(() => {
-    setProfile(defaultProfile);
-    setSubjects(defaultSubjects);
-    setGoals(defaultGoals);
-    setSessions(defaultStudySessions);
-    setRoutine(defaultRoutine);
-    setSettings(defaultSettings);
-  }, [setProfile, setSubjects, setGoals, setSessions, setRoutine, setSettings]);
 
   return {
     profile,
@@ -84,13 +87,10 @@ export function useAppData() {
     routine,
     settings,
     setProfile,
-    setSubjects,
+    subjectActions,
     setGoals,
-    setSessions,
+    addSession,
     setRoutine,
     setSettings,
-    setupQuickStart,
-    setupFreshStart,
-    resetData,
   };
 }

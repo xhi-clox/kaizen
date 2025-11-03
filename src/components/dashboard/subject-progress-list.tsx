@@ -12,6 +12,7 @@ export function SubjectProgressList() {
     const [subjects] = useSubjects();
 
     const subjectsWithProgress = useMemo(() => {
+        if (!subjects) return [];
         return subjects.map(subject => {
             const totalTopics = subject.chapters.reduce((acc, chap) => acc + chap.topics.length, 0);
             const completedTopics = subject.chapters.reduce((acc, chap) => acc + chap.topics.filter(t => t.status === 'completed').length, 0);

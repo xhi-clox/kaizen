@@ -1,8 +1,8 @@
 'use client';
 
-import { useSubjects, useStudySessions, useGoals } from '@/hooks/use-app-data';
+import { useSubjects, useStudySessions } from '@/hooks/use-app-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useMemo } from 'react';
 import { format, startOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import { Target, Clock, BookOpen } from 'lucide-react';
@@ -11,19 +11,22 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 export default function ProgressPage() {
   const [subjects] = useSubjects();
   const [sessions] = useStudySessions();
-  const [goals] = useGoals();
 
   const overallCompletion = useMemo(() => {
+    if (!subjects) return 0;
     const allTopics = subjects.flatMap(s => s.chapters.flatMap(c => c.topics));
+    if (allTopics.length === 0) return 0;
     const completed = allTopics.filter(t => t.status === 'completed').length;
-    return allTopics.length > 0 ? (completed / allTopics.length) * 100 : 0;
+    return (completed / allTopics.length) * 100;
   }, [subjects]);
 
   const totalStudyTime = useMemo(() => {
+    if (!sessions) return 0;
     return sessions.reduce((acc, s) => acc + s.duration, 0) / 60; // in hours
   }, [sessions]);
 
   const subjectProgressData = useMemo(() => {
+    if (!subjects) return [];
     return subjects.map(subject => {
       const allTopics = subject.chapters.flatMap(c => c.topics);
       const completed = allTopics.filter(t => t.status === 'completed').length;
@@ -37,6 +40,8 @@ export default function ProgressPage() {
     const weekStart = startOfWeek(today, { weekStartsOn: 6 }); // Saturday
     const weekEnd = today;
     const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+    if (!sessions) return [];
 
     return days.map(day => {
       const daySessions = sessions.filter(s => isSameDay(new Date(s.date), day));
@@ -85,7 +90,7 @@ export default function ProgressPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{subjectProgressData.filter(s => s.progress === 100).length}</div>
-            <p className="text-xs text-muted-foreground">out of {subjects.length} subjects</p>
+            <p className="text-xs text-muted-foreground">out of {subjects?.length || 0} subjects</p>
           </CardContent>
         </Card>
       </div>

@@ -14,6 +14,7 @@ export function RecentSessions() {
     const [subjects] = useSubjects();
 
     const recentSessions = useMemo(() => {
+        if (!sessions || !subjects) return [];
         return sessions
             .sort((a, b) => b.date - a.date)
             .slice(0, 5)
@@ -46,7 +47,7 @@ export function RecentSessions() {
                                     <div className="flex-1">
                                         <p className="font-medium text-sm leading-tight">{session.topicName || 'Unknown Topic'}</p>
                                         <p className="text-xs" style={{ color: session.subjectColor }}>{session.subjectName || 'Unknown Subject'}</p>
-                                        <p className="text-xs text-muted-foreground">{session.duration} mins &middot; {timeAgo(session.date)}</p>
+                                        <p className="text-xs text-muted-foreground">{session.duration} mins &middot; {timeAgo(new Date(session.date))}</p>
                                     </div>
                                     <div className={`capitalize text-xs font-semibold px-2 py-1 rounded-full ${
                                         session.sessionType === 'study' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 

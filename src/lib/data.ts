@@ -6,7 +6,7 @@ import { NCTB_SUBJECTS, WEEK_DAYS } from './constants';
 const tomorrow = addDays(new Date(), 1);
 
 export const defaultProfile: UserProfile = {
-  name: '',
+  name: 'Loading...',
   targetGPA: 5.0,
   examDate: format(addDays(new Date(), 180), 'yyyy-MM-dd'),
 };

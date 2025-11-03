@@ -1,6 +1,6 @@
 'use client';
 
-import { useRoutine, useSubjects, useSettings } from '@/hooks/use-app-data';
+import { useRoutine, useSubjects, useSettings, useProfile } from '@/hooks/use-app-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -113,6 +113,7 @@ export default function RoutinePage() {
   const [routine, setRoutine] = useRoutine();
   const [subjects] = useSubjects();
   const [settings] = useSettings();
+  const [profile] = useProfile();
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
@@ -140,9 +141,18 @@ export default function RoutinePage() {
 
   const handleGenerateRoutine = async () => {
     setIsGenerating(true);
+    if (!profile || !settings || !subjects) {
+        toast({
+            variant: "destructive",
+            title: "Data not loaded",
+            description: "Please wait for all data to load before generating a routine.",
+        });
+        setIsGenerating(false);
+        return;
+    }
     try {
         const input: AdaptiveRoutineInput = {
-            examDate: new Date().toISOString(), // This should come from profile
+            examDate: profile.examDate,
             availableStudyHoursPerDay: settings.dailyStudyHoursGoal,
             subjectPriorities: subjects.reduce((acc, s) => ({...acc, [s.id]: 'medium'}), {}), // This could be more dynamic
             syllabus: subjects,

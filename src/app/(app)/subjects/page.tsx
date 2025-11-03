@@ -447,89 +447,89 @@ export default function SubjectsPage() {
       <Accordion type="single" collapsible className="w-full space-y-4">
         {subjectsWithProgress.map((subject) => (
           <AccordionItem value={subject.id} key={subject.id} className="border-0">
-            <Card id={subject.id}>
-              <AccordionTrigger className="w-full p-4 hover:no-underline [&[data-state=open]]:pb-0">
-                <div className="flex items-center gap-4 flex-1">
-                  <div
-                    className="h-8 w-1.5 rounded-full"
-                    style={{ backgroundColor: subject.color }}
-                  ></div>
-                  <div className="flex-1 text-left">
-                    <CardTitle className="text-xl">{subject.name}</CardTitle>
-                    <CardDescription>
-                      {subject.completedCount} / {subject.topicCount} topics completed
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <span className="font-bold">{subject.progress}%</span>
-                        <Progress value={subject.progress} indicatorColor={subject.color} className="w-24 h-1.5" />
+             <Card id={subject.id}>
+                <AccordionTrigger className="w-full p-4 hover:no-underline [&[data-state=open]]:pb-0">
+                    <div className="flex items-center gap-4 flex-1">
+                    <div
+                        className="h-8 w-1.5 rounded-full"
+                        style={{ backgroundColor: subject.color }}
+                    ></div>
+                    <div className="flex-1 text-left">
+                        <CardTitle className="text-xl">{subject.name}</CardTitle>
+                        <CardDescription>
+                        {subject.completedCount} / {subject.topicCount} topics completed
+                        </CardDescription>
                     </div>
-                  </div>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <CardContent className="p-4 pt-0 space-y-2">
-                  <div className="flex items-center justify-end gap-2 p-2">
-                      <SubjectForm
-                        subject={subject}
-                        onSave={handleUpdateSubject}
-                      />
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This will permanently delete the subject &quot;{subject.name}&quot; and all its chapters and topics. This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                  </div>
-                  {subject.chapters.map((chapter) => (
-                    <Accordion
-                      key={chapter.id}
-                      type="single"
-                      collapsible
-                      className="border rounded-md px-4"
-                    >
-                      <AccordionItem value={chapter.id} className="border-b-0">
-                        <AccordionTrigger>
-                          {chapter.name}
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-2">
-                          {chapter.topics.map((topic) => (
-                            <TopicItem
-                              key={topic.id}
-                              topic={topic}
-                              onUpdate={(updatedTopic) =>
-                                handleUpdateTopic(
-                                  subject.id,
-                                  chapter.id,
-                                  updatedTopic
-                                )
-                              }
-                            />
-                          ))}
-                           <AddTopicForm subjectId={subject.id} chapterId={chapter.id} onAddTopic={handleAddTopic} />
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  ))}
-                </CardContent>
-              </AccordionContent>
-            </Card>
+                    <div className="flex items-center gap-4">
+                        <div className="text-right">
+                            <span className="font-bold">{subject.progress}%</span>
+                            <Progress value={subject.progress} indicatorColor={subject.color} className="w-24 h-1.5" />
+                        </div>
+                    </div>
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                    <CardContent className="p-4 pt-0 space-y-2">
+                    <div className="flex items-center justify-end gap-2 p-2">
+                        <SubjectForm
+                            subject={subject}
+                            onSave={handleUpdateSubject}
+                        />
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This will permanently delete the subject &quot;{subject.name}&quot; and all its chapters and topics. This action cannot be undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteSubject(subject.id)}>
+                                Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
+                    {subject.chapters.map((chapter) => (
+                        <Accordion
+                        key={chapter.id}
+                        type="single"
+                        collapsible
+                        className="border rounded-md px-4"
+                        >
+                        <AccordionItem value={chapter.id} className="border-b-0">
+                            <AccordionTrigger>
+                            {chapter.name}
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-2">
+                            {chapter.topics.map((topic) => (
+                                <TopicItem
+                                key={topic.id}
+                                topic={topic}
+                                onUpdate={(updatedTopic) =>
+                                    handleUpdateTopic(
+                                    subject.id,
+                                    chapter.id,
+                                    updatedTopic
+                                    )
+                                }
+                                />
+                            ))}
+                            <AddTopicForm subjectId={subject.id} chapterId={chapter.id} onAddTopic={handleAddTopic} />
+                            </AccordionContent>
+                        </AccordionItem>
+                        </Accordion>
+                    ))}
+                    </CardContent>
+                </AccordionContent>
+             </Card>
           </AccordionItem>
         ))}
       </Accordion>

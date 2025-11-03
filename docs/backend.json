@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores public information about a user.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "targetGPA": {
+          "type": "number",
+          "description": "The user's target Grade Point Average."
+        },
+        "examDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The user's scheduled exam date."
+        }
+      },
+      "required": ["name", "targetGPA", "examDate"]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "Represents a single academic subject in the syllabus.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "color": { "type": "string" },
+        "totalChapters": { "type": "number" },
+        "chapters": {
+          "type": "array",
+          "items": { "$ref": "#/entities/Chapter" }
+        }
+      },
+      "required": ["name", "color", "totalChapters", "chapters"]
+    },
+    "Chapter": {
+      "title": "Chapter",
+      "description": "A chapter within a subject.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "topics": {
+          "type": "array",
+          "items": { "$ref": "#/entities/Topic" }
+        }
+      },
+      "required": ["name", "topics"]
+    },
+    "Topic": {
+      "title": "Topic",
+      "description": "A topic within a chapter.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["not-started", "in-progress", "completed", "revision"] },
+        "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard", null] },
+        "completedDate": { "type": ["number", "null"] },
+        "timeSpent": { "type": "number" }
+      },
+      "required": ["name", "status"]
+    },
+    "Goals": {
+      "title": "Goals",
+      "description": "Stores all user goals.",
+      "type": "object",
+      "properties": {}
+    },
+    "StudySession": {
+      "title": "Study Session",
+      "description": "A record of a single study session.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "number" },
+        "subjectId": { "type": "string" },
+        "topicId": { "type": "string" },
+        "duration": { "type": "number" },
+        "sessionType": { "type": "string", "enum": ["study", "revision", "practice"] },
+        "notes": { "type": "string" },
+        "productive": { "type": "boolean" }
+      },
+      "required": ["date", "subjectId", "topicId", "duration", "sessionType"]
+    },
+    "Routine": {
+      "title": "Routine",
+      "description": "The user's weekly study routine.",
+      "type": "object",
+      "properties": {}
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "User-specific application settings.",
+      "type": "object",
+      "properties": {}
+    }
+  },
+  "auth": {
+    "providers": ["email"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores user profile information."
+    },
+    "/users/{userId}/subjects/{subjectId}": {
+      "schema": { "$ref": "#/entities/Subject" },
+      "description": "User's academic subjects."
+    },
+    "/users/{userId}/data/goals": {
+      "schema": { "$ref": "#/entities/Goals" },
+      "description": "User's goals."
+    },
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/StudySession" },
+      "description": "User's study sessions."
+    },
+    "/users/{userId}/data/routine": {
+      "schema": { "$ref": "#/entities/Routine" },
+      "description": "User's routine."
+    },
+    "/users/{userId}/data/settings": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "User's settings."
+    }
+  }
+}

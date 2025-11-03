@@ -55,57 +55,35 @@ export default function WelcomePage() {
     resolver: zodResolver(FormSchema),
     defaultValues: {
       name: '',
-      examDate: undefined,
     },
   });
 
   useEffect(() => {
+    // Set a default exam date 6 months in the future, but only on the client
     form.setValue('examDate', new Date(new Date().setMonth(new Date().getMonth() + 6)));
   }, [form]);
 
 
   function handleQuickStart(values: z.infer<typeof FormSchema>) {
     setLoading('quick');
-    try {
-        const dateString = format(values.examDate, 'yyyy-MM-dd');
-        setupQuickStart(values.name, dateString);
-        toast({
-            title: 'Welcome to HSC Success Planner!',
-            description: "We've set up some sample data for you.",
-        });
-        router.push('/dashboard');
-    } catch(e) {
-        console.error(e);
-        toast({
-            title: 'Uh oh!',
-            description: "Something went wrong setting up your account.",
-            variant: 'destructive',
-        });
-    } finally {
-        setLoading(null);
-    }
+    const dateString = format(values.examDate, 'yyyy-MM-dd');
+    setupQuickStart(values.name, dateString);
+    toast({
+        title: 'Welcome to HSC Success Planner!',
+        description: "We've set up some sample data for you.",
+    });
+    router.push('/dashboard');
   }
   
   function handleFreshStart(values: z.infer<typeof FormSchema>) {
     setLoading('fresh');
-    try {
-        const dateString = format(values.examDate, 'yyyy-MM-dd');
-        setupFreshStart(values.name, dateString);
-        toast({
-            title: 'Welcome to HSC Success Planner!',
-            description: "Your new study plan is ready.",
-        });
-        router.push('/dashboard');
-    } catch(e) {
-        console.error(e);
-        toast({
-            title: 'Uh oh!',
-            description: "Something went wrong setting up your account.",
-            variant: 'destructive',
-        });
-    } finally {
-        setLoading(null);
-    }
+    const dateString = format(values.examDate, 'yyyy-MM-dd');
+    setupFreshStart(values.name, dateString);
+    toast({
+        title: 'Welcome to HSC Success Planner!',
+        description: "Your new study plan is ready.",
+    });
+    router.push('/dashboard');
   }
 
   return (

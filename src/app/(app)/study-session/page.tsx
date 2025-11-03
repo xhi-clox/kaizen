@@ -19,17 +19,27 @@ import {
 import { useSettings, useSubjects, useStudySessions } from '@/hooks/use-app-data';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Play, Pause, RefreshCw, SkipForward } from 'lucide-react';
-import type { StudySession, Topic, Chapter } from '@/lib/types';
+import type { StudySession, Topic } from '@/lib/types';
 import { nanoid } from 'nanoid';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type SessionType = 'work' | 'shortBreak' | 'longBreak';
 
 export default function StudySessionPage() {
   const [settings] = useSettings();
-  const [subjects] = useSubjects();
+  const [subjects, setSubjects] = useSubjects();
   const [sessions, setSessions] = useStudySessions();
   const { toast } = useToast();
 
@@ -40,6 +50,10 @@ export default function StudySessionPage() {
   const [sessionCount, setSessionCount] = useState(0);
   const [sessionType, setSessionType] = useState<SessionType>('work');
   const [isActive, setIsActive] = useState(false);
+
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [lastCompletedSession, setLastCompletedSession] = useState<{subjectId: string, topicId: string} | null>(null);
+
 
   const getTimerDuration = useCallback(() => {
     switch (sessionType) {
@@ -64,12 +78,13 @@ export default function StudySessionPage() {
       interval = setInterval(() => {
         setTimeLeft((time) => time - 1);
       }, 1000);
-    } else if (timeLeft === 0) {
+    } else if (timeLeft === 0 && isActive) { // only trigger when timer hits 0 and was active
         handleSessionEnd();
     }
     return () => {
       if (interval) clearInterval(interval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, timeLeft]);
 
 
@@ -80,11 +95,10 @@ export default function StudySessionPage() {
   }, [selectedSubject, subjects]);
 
 
-  const handleSessionEnd = () => {
+  const handleSessionEnd = useCallback(() => {
     setIsActive(false);
     
     if (sessionType === 'work') {
-        // Log the study session
         if (selectedSubject && selectedTopic) {
             const newSession: StudySession = {
                 id: nanoid(),
@@ -92,33 +106,65 @@ export default function StudySessionPage() {
                 subjectId: selectedSubject,
                 topicId: selectedTopic,
                 duration: settings.pomodoro.work,
-                sessionType: 'study', // Or could be revision/practice
+                sessionType: 'study',
                 notes: sessionNotes,
-                productive: true, // Could be a user input
+                productive: true,
             };
-            setSessions([...sessions, newSession]);
+            setSessions(prev => [...prev, newSession]);
             toast({ title: "Study session logged!", description: `${settings.pomodoro.work} minutes of focused work.` });
+            
+            setLastCompletedSession({ subjectId: selectedSubject, topicId: selectedTopic });
+            setShowCompletionDialog(true);
             setSessionNotes('');
-        }
-        
-        // Determine next session type
-        const newSessionCount = sessionCount + 1;
-        setSessionCount(newSessionCount);
-        if (newSessionCount % 4 === 0) {
-            setSessionType('longBreak');
-            toast({ title: "Time for a long break!", variant: 'default' });
         } else {
-            setSessionType('shortBreak');
-            toast({ title: "Time for a short break!", variant: 'default' });
+            // If no topic was selected, just move to break
+            moveToNextSessionType();
         }
     } else {
-        // Break ended, start new work session
         setSessionType('work');
         toast({ title: "Break's over! Time to focus.", variant: 'default' });
+        setTimeLeft(getTimerDuration());
     }
-    
+  }, [sessionType, selectedSubject, selectedTopic, settings.pomodoro.work, sessionNotes, setSessions, toast, getTimerDuration]);
+
+  const moveToNextSessionType = () => {
+    const newSessionCount = sessionCount + 1;
+    setSessionCount(newSessionCount);
+    if (newSessionCount % 4 === 0) {
+        setSessionType('longBreak');
+        toast({ title: "Time for a long break!" });
+    } else {
+        setSessionType('shortBreak');
+        toast({ title: "Time for a short break!" });
+    }
     setTimeLeft(getTimerDuration());
-  };
+  }
+
+  const handleUpdateTopicStatus = (markAsComplete: boolean) => {
+    if (markAsComplete && lastCompletedSession) {
+      setSubjects(prevSubjects => 
+        prevSubjects.map(s => 
+          s.id === lastCompletedSession.subjectId 
+            ? {
+              ...s,
+              chapters: s.chapters.map(c => ({
+                ...c,
+                topics: c.topics.map(t => 
+                  t.id === lastCompletedSession.topicId 
+                  ? { ...t, status: 'completed', completedDate: Date.now() } 
+                  : t
+                )
+              }))
+            }
+            : s
+        )
+      );
+      toast({ title: "Topic marked as completed!" });
+    }
+    setShowCompletionDialog(false);
+    setLastCompletedSession(null);
+    moveToNextSessionType();
+  }
 
 
   const toggleTimer = () => {
@@ -139,7 +185,16 @@ export default function StudySessionPage() {
   };
 
   const skipToNext = () => {
-    handleSessionEnd();
+    if(isActive) {
+        handleSessionEnd();
+    } else {
+        if (sessionType === 'work') {
+            moveToNextSessionType();
+        } else {
+            setSessionType('work');
+            setTimeLeft(getTimerDuration());
+        }
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -270,6 +325,20 @@ export default function StudySessionPage() {
           </Button>
         </CardFooter>
       </Card>
+      <AlertDialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Session Complete!</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Great work! Do you want to mark this topic as completed?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => handleUpdateTopicStatus(false)}>Not yet</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleUpdateTopicStatus(true)}>Yes, mark as complete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

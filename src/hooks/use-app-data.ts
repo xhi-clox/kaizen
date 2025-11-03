@@ -20,6 +20,7 @@ import type {
 } from '@/lib/types';
 import { doc, collection } from 'firebase/firestore';
 import { useFirebase } from '@/firebase/provider';
+import { useMemo } from 'react';
 
 
 export const useProfile = () => {
@@ -34,7 +35,9 @@ export const useProfile = () => {
 
 export const useSubjects = () => {
     const { user } = useUser();
-    const { data, loading, add, update, remove } = useCollection<Subject>('subjects', user?.uid);
+    const { firestore } = useFirebase();
+    const subjectsColRef = useMemo(() => user ? collection(firestore, `users/${user.uid}/subjects`) : null, [user, firestore]);
+    const { data, loading, add, update, remove } = useCollection<Subject>(subjectsColRef);
     return [data, { add, update, remove }, loading] as const;
 }
 
@@ -49,7 +52,9 @@ export const useGoals = () => {
 
 export const useStudySessions = () => {
     const { user } = useUser();
-    const { data, loading, add } = useCollection<StudySession>('sessions', user?.uid);
+    const { firestore } = useFirebase();
+    const sessionsColRef = useMemo(() => user ? collection(firestore, `users/${user.uid}/sessions`) : null, [user, firestore]);
+    const { data, loading, add } = useCollection<StudySession>(sessionsColRef);
     return [data, add, loading] as const;
 }
 

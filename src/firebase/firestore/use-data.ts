@@ -10,6 +10,7 @@ import {
   updateDoc,
   type DocumentReference,
   type DocumentData,
+  type CollectionReference,
 } from 'firebase/firestore';
 import { useState, useEffect, useContext, useMemo } from 'react';
 import { FirebaseContext } from '../provider';
@@ -23,15 +24,9 @@ const handleError = (error: any, context: string) => {
   // toast({ variant: "destructive", title: "Database Error", description: error.message });
 }
 
-export function useCollection<T extends { id: string }>(path: string, uid?: string | null) {
-  const { firestore } = useContext(FirebaseContext);
+export function useCollection<T extends { id: string }>(collectionRef: CollectionReference | null) {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const collectionRef = useMemo(() => {
-      if (!firestore || !uid) return null;
-      return collection(firestore, 'users', uid, path);
-  }, [firestore, path, uid]);
 
   useEffect(() => {
     if (!collectionRef) {
@@ -48,19 +43,19 @@ export function useCollection<T extends { id: string }>(path: string, uid?: stri
       setData(result);
       setLoading(false);
     }, (error) => {
-        handleError(error, `useCollection (${path})`);
+        handleError(error, `useCollection (${collectionRef.path})`);
         setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [collectionRef, path]);
+  }, [collectionRef]);
 
   const add = async (item: Omit<T, 'id'>) => {
     if (!collectionRef) return;
     try {
       return await addDoc(collectionRef, item as DocumentData);
     } catch (error) {
-      handleError(error, `add to ${path}`);
+      handleError(error, `add to ${collectionRef.path}`);
     }
   };
 
@@ -70,7 +65,7 @@ export function useCollection<T extends { id: string }>(path: string, uid?: stri
     try {
       return await updateDoc(docRef, item as DocumentData);
     } catch (error) {
-      handleError(error, `update in ${path}`);
+      handleError(error, `update in ${collectionRef.path}`);
     }
   }
 
@@ -80,7 +75,7 @@ export function useCollection<T extends { id: string }>(path: string, uid?: stri
     try {
       return await deleteDoc(docRef);
     } catch (error) {
-      handleError(error, `remove from ${path}`);
+      handleError(error, `remove from ${collectionRef.path}`);
     }
   }
 

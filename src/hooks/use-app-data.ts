@@ -36,29 +36,31 @@ export function useAppData() {
   const [routine, setRoutine] = useRoutine();
   const [settings, setSettings] = useSettings();
 
-  const setupQuickStart = useCallback((name: string, examDate: string) => {
-    setProfile({ name, examDate, targetGPA: 5.0 });
+  const setupQuickStart = useCallback((name: string) => {
+    const newProfile = { ...defaultProfile, name };
+    setProfile(newProfile);
     const subjectsWithIds = sampleSubjects.map(s => ({...s, id: nanoid()}));
     setSubjects(subjectsWithIds);
     setGoals(prev => ({
         ...prev,
         exam: {
             ...prev.exam,
-            examDate: examDate,
+            examDate: newProfile.examDate,
             targetGPA: 5.0,
             subjectTargets: subjectsWithIds.map(s => ({ subjectId: s.id, targetMarks: 85 }))
         }
     }));
   }, [setProfile, setSubjects, setGoals]);
 
-  const setupFreshStart = useCallback((name: string, examDate: string) => {
-    setProfile({ name, examDate, targetGPA: 5.0 });
+  const setupFreshStart = useCallback((name: string) => {
+    const newProfile = { ...defaultProfile, name };
+    setProfile(newProfile);
     setSubjects(defaultSubjects);
      setGoals(prev => ({
         ...prev,
         exam: {
             ...prev.exam,
-            examDate: examDate,
+            examDate: newProfile.examDate,
             targetGPA: 5.0,
             subjectTargets: []
         }

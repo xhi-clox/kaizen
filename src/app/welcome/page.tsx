@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { format } from 'date-fns';
-import { CalendarIcon, Rocket, Sparkles } from 'lucide-react';
+import { Rocket, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,21 +26,11 @@ import {
 } from '@/components/ui/card';
 import { AppLogo } from '@/components/app-logo';
 import { useAppData } from '@/hooks/use-app-data';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 const FormSchema = z.object({
   name: z.string().min(2, {
     message: 'Name must be at least 2 characters.',
-  }),
-  examDate: z.date({
-    required_error: 'Exam date is required.',
   }),
 });
 
@@ -64,30 +53,35 @@ export default function WelcomePage() {
 
   useEffect(() => {
     setIsClient(true);
-    // Set a default exam date 6 months in the future, but only on the client
-    form.setValue('examDate', new Date(new Date().setMonth(new Date().getMonth() + 6)));
-  }, [form]);
+  }, []);
 
   function onSubmit(values: z.infer<typeof FormSchema>) {
     setLoading(startType);
-    const dateString = format(values.examDate, 'yyyy-MM-dd');
-
-    if (startType === 'quick') {
-        setupQuickStart(values.name, dateString);
+    try {
+        if (startType === 'quick') {
+            setupQuickStart(values.name);
+            toast({
+                title: 'Welcome to HSC Success Planner!',
+                description: "We've set up some sample data for you.",
+            });
+        } else {
+            setupFreshStart(values.name);
+            toast({
+                title: 'Welcome to HSC Success Planner!',
+                description: "Your new study plan is ready.",
+            });
+        }
+        router.push('/dashboard');
+    } catch(e) {
+        console.error(e);
         toast({
-            title: 'Welcome to HSC Success Planner!',
-            description: "We've set up some sample data for you.",
+            variant: 'destructive',
+            title: 'Uh oh! Something went wrong.',
+            description: 'There was a problem setting up your account.',
         });
-    } else {
-        setupFreshStart(values.name, dateString);
-        toast({
-            title: 'Welcome to HSC Success Planner!',
-            description: "Your new study plan is ready.",
-        });
+    } finally {
+        setLoading(null);
     }
-    
-    router.push('/dashboard');
-    setLoading(null);
   }
 
   if (!isClient) {
@@ -120,47 +114,6 @@ export default function WelcomePage() {
                     <FormControl>
                       <Input placeholder="Your Name" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="examDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>When is your HSC exam?</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={'outline'}
-                            className={cn(
-                              'w-full pl-3 text-left font-normal',
-                              !field.value && 'text-muted-foreground'
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, 'PPP')
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date < new Date(new Date().setHours(0,0,0,0))
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}

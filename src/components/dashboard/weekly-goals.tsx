@@ -83,12 +83,12 @@ export function WeeklyGoals() {
                                 }) : <p className="text-sm text-muted-foreground">No chapter targets set.</p>}
                             </ul>
                         </div>
-                        <div className="space-y-4">
-                            <div>
+                        <div className="space-y-2 text-right">
+                            <div className="flex justify-between items-center">
                                 <h4 className="font-medium text-muted-foreground">Revision</h4>
                                 <p className="text-lg font-bold">{currentWeeklyGoal.revisionHours} hours</p>
                             </div>
-                            <div>
+                            <div className="flex justify-between items-center">
                                 <h4 className="font-medium text-muted-foreground">Mock Tests</h4>
                                 <p className="text-lg font-bold">{currentWeeklyGoal.mockTests} tests</p>
                             </div>

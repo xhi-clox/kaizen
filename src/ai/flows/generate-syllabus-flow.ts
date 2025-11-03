@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -84,6 +85,7 @@ const syllabusGenerationPrompt = ai.definePrompt({
   name: 'syllabusGenerationPrompt',
   input: { schema: GenerateSyllabusInputSchema },
   output: { schema: GenerateSyllabusOutputSchema },
+  model: 'googleai/gemini-2.5-flash',
   prompt: `You are a definitive expert on the Bangladesh National Curriculum and Textbook Board (NCTB) syllabus for the Higher Secondary Certificate (HSC) for the Science Group. Your knowledge is precise and up-to-date. Mistakes are not acceptable.
 
 Your task is to generate a complete and accurate list of all subjects, including all chapters and topics for the specified curriculum: {{{curriculumName}}}.

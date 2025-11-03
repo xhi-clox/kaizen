@@ -446,31 +446,30 @@ export default function SubjectsPage() {
 
       <Accordion type="single" collapsible className="w-full space-y-4">
         {subjectsWithProgress.map((subject) => (
-          <AccordionItem value={subject.id} key={subject.id} className="border-0">
-             <Card id={subject.id}>
-                <AccordionTrigger className="w-full p-4 hover:no-underline [&[data-state=open]]:pb-0">
-                    <div className="flex items-center gap-4 flex-1">
-                    <div
-                        className="h-8 w-1.5 rounded-full"
-                        style={{ backgroundColor: subject.color }}
-                    ></div>
-                    <div className="flex-1 text-left">
-                        <CardTitle className="text-xl">{subject.name}</CardTitle>
-                        <CardDescription>
-                        {subject.completedCount} / {subject.topicCount} topics completed
-                        </CardDescription>
+          <AccordionItem value={subject.id} key={subject.id} className="border-b-0 rounded-lg bg-card shadow-sm border">
+            <AccordionTrigger className="w-full p-4 hover:no-underline [&[data-state=open]]:border-b">
+                <div className="flex items-center gap-4 flex-1">
+                <div
+                    className="h-8 w-1.5 rounded-full"
+                    style={{ backgroundColor: subject.color }}
+                ></div>
+                <div className="flex-1 text-left">
+                    <p className="text-xl font-semibold leading-none tracking-tight">{subject.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                    {subject.completedCount} / {subject.topicCount} topics completed
+                    </p>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="text-right">
+                        <span className="font-bold">{subject.progress}%</span>
+                        <Progress value={subject.progress} indicatorColor={subject.color} className="w-24 h-1.5" />
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="text-right">
-                            <span className="font-bold">{subject.progress}%</span>
-                            <Progress value={subject.progress} indicatorColor={subject.color} className="w-24 h-1.5" />
-                        </div>
-                    </div>
-                    </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                    <CardContent className="p-4 pt-0 space-y-2">
-                    <div className="flex items-center justify-end gap-2 p-2">
+                </div>
+                </div>
+            </AccordionTrigger>
+            <AccordionContent className="p-4 pt-0">
+                <Card>
+                    <CardHeader className="flex-row items-center justify-end gap-2 p-2">
                         <SubjectForm
                             subject={subject}
                             onSave={handleUpdateSubject}
@@ -496,40 +495,41 @@ export default function SubjectsPage() {
                             </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
-                    </div>
-                    {subject.chapters.map((chapter) => (
-                        <Accordion
-                        key={chapter.id}
-                        type="single"
-                        collapsible
-                        className="border rounded-md px-4"
-                        >
-                        <AccordionItem value={chapter.id} className="border-b-0">
-                            <AccordionTrigger>
-                            {chapter.name}
-                            </AccordionTrigger>
-                            <AccordionContent className="space-y-2">
-                            {chapter.topics.map((topic) => (
-                                <TopicItem
-                                key={topic.id}
-                                topic={topic}
-                                onUpdate={(updatedTopic) =>
-                                    handleUpdateTopic(
-                                    subject.id,
-                                    chapter.id,
-                                    updatedTopic
-                                    )
-                                }
-                                />
-                            ))}
-                            <AddTopicForm subjectId={subject.id} chapterId={chapter.id} onAddTopic={handleAddTopic} />
-                            </AccordionContent>
-                        </AccordionItem>
-                        </Accordion>
-                    ))}
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 space-y-2">
+                      {subject.chapters.map((chapter) => (
+                          <Accordion
+                          key={chapter.id}
+                          type="single"
+                          collapsible
+                          className="border rounded-md px-4"
+                          >
+                          <AccordionItem value={chapter.id} className="border-b-0">
+                              <AccordionTrigger>
+                              {chapter.name}
+                              </AccordionTrigger>
+                              <AccordionContent className="space-y-2">
+                              {chapter.topics.map((topic) => (
+                                  <TopicItem
+                                  key={topic.id}
+                                  topic={topic}
+                                  onUpdate={(updatedTopic) =>
+                                      handleUpdateTopic(
+                                      subject.id,
+                                      chapter.id,
+                                      updatedTopic
+                                      )
+                                  }
+                                  />
+                              ))}
+                              <AddTopicForm subjectId={subject.id} chapterId={chapter.id} onAddTopic={handleAddTopic} />
+                              </AccordionContent>
+                          </AccordionItem>
+                          </Accordion>
+                      ))}
                     </CardContent>
-                </AccordionContent>
-             </Card>
+                </Card>
+            </AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>

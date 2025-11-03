@@ -15,8 +15,10 @@ import { RecentSessions } from '@/components/dashboard/recent-sessions';
 export default function DashboardPage() {
   const { profile } = useAppData();
   const [quote, setQuote] = useState('');
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     const motivationalQuotes = [
       "Success is the sum of small efforts repeated daily.",
       "The secret to getting ahead is getting started.",
@@ -32,7 +34,11 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-            Welcome back, <span className="hsc-gradient-text">{profile.name}!</span>
+            {isClient ? (
+              <>Welcome back, <span className="hsc-gradient-text">{profile.name}!</span></>
+            ) : (
+              <>Welcome back!</>
+            )}
           </h1>
           <p className="text-muted-foreground">{quote}</p>
         </div>

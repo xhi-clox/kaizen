@@ -34,10 +34,12 @@ export function Header() {
   const [profile] = useProfile();
   const pageTitle = getPageTitle(pathname);
   const [initials, setInitials] = useState('');
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     const getInitials = (name: string) => {
-      if (!name) return 'U';
+      if (!name) return '';
       const names = name.split(' ');
       if (names.length > 1) {
         return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
@@ -61,7 +63,7 @@ export function Header() {
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
                 <AvatarImage src="https://picsum.photos/seed/hsc-user/100/100" alt={profile.name} data-ai-hint="person portrait" />
-                <AvatarFallback>{initials}</AvatarFallback>
+                <AvatarFallback>{isClient ? initials : ''}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>

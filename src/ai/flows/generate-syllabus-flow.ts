@@ -9,16 +9,19 @@
  */
 
 import { collection, writeBatch, getFirestore, doc, getDocs } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { firebaseConfig } from '@/firebase/config';
 import { NCTB_HSC_SYLLABUS } from '@/lib/syllabus-data';
 
 // This function is intended to be called from a script or an admin panel, not from the main UI.
 export async function generateAndSeedSyllabus(): Promise<{ subjectCount: number }> {
   console.log("Starting syllabus seeding from manual data file...");
 
-  const subjectsWithIds = NCTB_HSC_SYLLABUS;
+  // Initialize Firebase app for server-side usage
+  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  const firestore = getFirestore(app);
 
-  const { firestore } = initializeFirebase();
+  const subjectsWithIds = NCTB_HSC_SYLLABUS;
   const syllabusRef = collection(firestore, 'syllabus');
 
   console.log("Deleting existing syllabus...");

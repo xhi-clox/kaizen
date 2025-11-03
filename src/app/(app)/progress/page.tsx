@@ -92,6 +92,22 @@ export default function ProgressPage() {
       };
     });
   }, [sessions]);
+  
+  const chartConfig = useMemo(() => {
+    const config: any = {};
+    subjectProgressData.forEach(item => {
+        config[item.name] = {
+            label: item.name,
+            color: item.fill,
+        };
+    });
+    return {
+        progress: {
+            label: 'Progress',
+        },
+        ...config,
+    };
+  }, [subjectProgressData]);
 
   return (
     <div className="space-y-6">
@@ -142,7 +158,7 @@ export default function ProgressPage() {
             <CardDescription>Your progress in each subject.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-96 w-full">
+            <ChartContainer config={chartConfig} className="h-96 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 20, right: 30, top: 10, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -159,7 +175,7 @@ export default function ProgressPage() {
                   <Bar dataKey="progress" background={{ fill: 'hsl(var(--muted))' }} radius={[4, 4, 4, 4]} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
+            </ChartContainer>
           </CardContent>
         </Card>
         <Card>

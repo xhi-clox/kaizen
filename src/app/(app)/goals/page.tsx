@@ -14,6 +14,7 @@ import { Edit, Flag, Target, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useState } from 'react';
 import { format } from 'date-fns';
+import { Label } from '@/components/ui/label';
 
 const examGoalSchema = z.object({
   targetGPA: z.coerce.number().min(1).max(5),

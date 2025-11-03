@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { useSettings } from './use-app-data';
 import { setItem, getItem } from '@/lib/storage';
+import { defaultSettings } from '@/lib/data';
 
 export type SessionType = 'work' | 'shortBreak' | 'longBreak';
 

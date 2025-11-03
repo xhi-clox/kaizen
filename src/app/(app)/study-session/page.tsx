@@ -34,6 +34,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 type SessionType = 'work' | 'shortBreak' | 'longBreak';
 
@@ -54,17 +56,19 @@ export default function StudySessionPage() {
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [lastCompletedSession, setLastCompletedSession] = useState<{subjectId: string, topicId: string} | null>(null);
 
+  const [manualDuration, setManualDuration] = useState(settings.pomodoro.work);
+
 
   const getTimerDuration = useCallback(() => {
     switch (sessionType) {
       case 'work':
-        return settings.pomodoro.work * 60;
+        return manualDuration * 60;
       case 'shortBreak':
         return settings.pomodoro.shortBreak * 60;
       case 'longBreak':
         return settings.pomodoro.longBreak * 60;
     }
-  }, [settings, sessionType]);
+  }, [settings, sessionType, manualDuration]);
 
   const [timeLeft, setTimeLeft] = useState(getTimerDuration());
 
@@ -87,6 +91,13 @@ export default function StudySessionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, timeLeft]);
 
+  // When settings change, update manual duration if timer is not active
+  useEffect(() => {
+    if (!isActive) {
+      setManualDuration(settings.pomodoro.work);
+    }
+  }, [settings.pomodoro.work, isActive]);
+
 
   const availableTopics = useMemo(() => {
     if (!selectedSubject) return [];
@@ -105,13 +116,13 @@ export default function StudySessionPage() {
                 date: Date.now(),
                 subjectId: selectedSubject,
                 topicId: selectedTopic,
-                duration: settings.pomodoro.work,
+                duration: manualDuration,
                 sessionType: 'study',
                 notes: sessionNotes,
                 productive: true,
             };
             setSessions(prev => [...prev, newSession]);
-            toast({ title: "Study session logged!", description: `${settings.pomodoro.work} minutes of focused work.` });
+            toast({ title: "Study session logged!", description: `${manualDuration} minutes of focused work.` });
             
             setLastCompletedSession({ subjectId: selectedSubject, topicId: selectedTopic });
             setShowCompletionDialog(true);
@@ -125,7 +136,7 @@ export default function StudySessionPage() {
         toast({ title: "Break's over! Time to focus.", variant: 'default' });
         setTimeLeft(getTimerDuration());
     }
-  }, [sessionType, selectedSubject, selectedTopic, settings.pomodoro.work, sessionNotes, setSessions, toast, getTimerDuration]);
+  }, [sessionType, selectedSubject, selectedTopic, manualDuration, sessionNotes, setSessions, toast, getTimerDuration]);
 
   const moveToNextSessionType = () => {
     const newSessionCount = sessionCount + 1;
@@ -269,6 +280,25 @@ export default function StudySessionPage() {
 
           {sessionType === 'work' && (
             <div className="w-full space-y-4">
+               <div className="space-y-2">
+                <Label htmlFor="manual-duration">Session Duration (minutes)</Label>
+                <Input 
+                    id="manual-duration"
+                    type="number"
+                    value={manualDuration}
+                    onChange={(e) => {
+                        const newDuration = parseInt(e.target.value, 10);
+                        if (!isNaN(newDuration) && newDuration > 0) {
+                            setManualDuration(newDuration);
+                            if (!isActive) {
+                                setTimeLeft(newDuration * 60);
+                            }
+                        }
+                    }}
+                    disabled={isActive}
+                    min="1"
+                />
+               </div>
               <Select
                 value={selectedSubject || ''}
                 onValueChange={(val) => {
@@ -342,3 +372,5 @@ export default function StudySessionPage() {
     </div>
   );
 }
+
+    

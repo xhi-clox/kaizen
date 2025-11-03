@@ -5,6 +5,7 @@ import { Card, CardContent } from './ui/card';
 import { useEffect, useRef, useState } from 'react';
 import { Pause, Play, SkipForward } from 'lucide-react';
 import { Button } from './ui/button';
+import { usePathname } from 'next/navigation';
 
 const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -26,6 +27,7 @@ const getSessionTypeInfo = (sessionType: SessionType) => {
 export function PersistentTimer() {
     const { timeLeft, isActive, isTimerVisible, sessionType, pauseTimer, startTimer, skipTimer } = useTimer();
     const { label, color } = getSessionTypeInfo(sessionType);
+    const pathname = usePathname();
     
     const [position, setPosition] = useState({ x: 20, y: 20 });
     const [isDragging, setIsDragging] = useState(false);
@@ -41,7 +43,6 @@ export function PersistentTimer() {
             x: e.clientX - rect.left,
             y: e.clientY - rect.top,
         };
-        // Prevent text selection while dragging
         e.preventDefault();
     };
 
@@ -72,7 +73,7 @@ export function PersistentTimer() {
         };
     }, [isDragging]);
     
-    if (!isTimerVisible) return null;
+    if (!isTimerVisible || pathname === '/study-session') return null;
 
     return (
         <div
@@ -81,7 +82,7 @@ export function PersistentTimer() {
             style={{
                 left: `${position.x}px`,
                 top: `${position.y}px`,
-                touchAction: 'none', // prevent scrolling on mobile
+                touchAction: 'none',
             }}
             onMouseDown={onMouseDown}
         >
@@ -95,7 +96,7 @@ export function PersistentTimer() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={isActive ? pauseTimer : startTimer}>
                             {isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                         </Button>
-                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => skipTimer()}>
+                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={skipTimer}>
                             <SkipForward className="h-4 w-4" />
                         </Button>
                     </div>

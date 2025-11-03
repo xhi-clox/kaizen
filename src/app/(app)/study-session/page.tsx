@@ -51,6 +51,7 @@ export default function StudySessionPage() {
     resetTimer,
     skipTimer,
     endWorkSession,
+    setIsTimerVisible,
   } = useTimer();
 
   const [subjects] = useSubjects();
@@ -66,6 +67,11 @@ export default function StudySessionPage() {
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [lastCompletedSession, setLastCompletedSession] = useState<{subjectId: string, topicId: string, subject: Subject} | null>(null);
 
+  // When this page mounts, ensure the timer is not shown as a floating widget
+  useEffect(() => {
+    setIsTimerVisible(false);
+  }, [setIsTimerVisible]);
+
   const getTimerDuration = useCallback(() => {
     switch (sessionType) {
       case 'work':
@@ -77,33 +83,8 @@ export default function StudySessionPage() {
     }
   }, [sessionType, manualDuration]);
 
-  // When timer hits 0, handle the session end logic
-  useEffect(() => {
-    if (timeLeft === 0 && !isTimerVisible && sessionType === 'work') {
-      handleSessionEnd();
-    } else if (timeLeft === 0 && !isTimerVisible && (sessionType === 'shortBreak' || sessionType === 'longBreak')) {
-        // Break finished, go back to work
-        resetTimer(); // This will switch type to 'work' in a future state of the hook
-        toast({ title: "Break's over! Time to focus.", variant: 'default' });
-    }
-  }, [timeLeft, isTimerVisible, sessionType]);
-
-
-  const availableChapters = useMemo(() => {
-    if (!selectedSubject) return [];
-    const subject = subjects.find((s) => s.id === selectedSubject);
-    return subject ? subject.chapters || [] : [];
-  }, [selectedSubject, subjects]);
-
-  const availableTopics = useMemo(() => {
-    if (!selectedChapter) return [];
-    const chapter = availableChapters.find((c) => c.id === selectedChapter);
-    return chapter ? chapter.topics || [] : [];
-  }, [selectedChapter, availableChapters]);
-
-
   const handleSessionEnd = useCallback(() => {
-    if (sessionType === 'work') {
+    if (sessionType === 'work' && isActive === false) { // Check isActive to ensure it just finished
         if (selectedSubject && selectedTopic) {
             const subject = subjects.find(s => s.id === selectedSubject);
             if (!subject) return;
@@ -124,12 +105,32 @@ export default function StudySessionPage() {
             setShowCompletionDialog(true);
             setSessionNotes('');
         } else {
-            // If no topic was selected, just move to break
             endWorkSession(false);
             toast({ title: "Time for a break!" });
         }
     }
-  }, [sessionType, selectedSubject, selectedTopic, manualDuration, sessionNotes, addSession, toast, subjects, endWorkSession]);
+  }, [sessionType, selectedSubject, selectedTopic, manualDuration, sessionNotes, addSession, toast, subjects, endWorkSession, isActive]);
+
+
+  // When timer hits 0, handle the session end logic
+  useEffect(() => {
+    if (timeLeft === 0) {
+      handleSessionEnd();
+    }
+  }, [timeLeft, handleSessionEnd]);
+
+
+  const availableChapters = useMemo(() => {
+    if (!selectedSubject) return [];
+    const subject = subjects.find((s) => s.id === selectedSubject);
+    return subject ? subject.chapters || [] : [];
+  }, [selectedSubject, subjects]);
+
+  const availableTopics = useMemo(() => {
+    if (!selectedChapter) return [];
+    const chapter = availableChapters.find((c) => c.id === selectedChapter);
+    return chapter ? chapter.topics || [] : [];
+  }, [selectedChapter, availableChapters]);
 
   const handleUpdateTopicStatus = (markAsComplete: boolean) => {
     if (markAsComplete && lastCompletedSession) {
@@ -163,12 +164,13 @@ export default function StudySessionPage() {
   };
   
   const handleSkip = () => {
-      skipTimer(); // This just pauses and hides the floating timer
-      if (sessionType === 'work') {
-        handleSessionEnd();
-      } else {
-        resetTimer(); // This will go back to a work session
-      }
+    // Manually trigger session end logic if skipping a work session
+    if (sessionType === 'work') {
+      handleSessionEnd();
+    } else {
+      // If skipping a break, just skip it.
+      skipTimer();
+    }
   }
 
 

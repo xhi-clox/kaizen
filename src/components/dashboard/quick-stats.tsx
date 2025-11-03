@@ -33,13 +33,15 @@ export function QuickStats() {
         setIsClient(true);
     }, []);
 
+    const allTopics = useMemo(() => {
+        return subjects.flatMap(s => s.chapters.flatMap(c => c.topics));
+    }, [subjects]);
+
     const overallCompletion = useMemo(() => {
-        if (!subjects?.length) return 0;
-        const totalTopics = subjects.reduce((acc, subject) => acc + (subject.chapters || []).reduce((chapAcc, chap) => chapAcc + (chap.topics || []).length, 0), 0);
-        if (totalTopics === 0) return 0;
-        const completedTopics = subjects.reduce((acc, subject) => acc + (subject.chapters || []).reduce((chapAcc, chap) => chapAcc + (chap.topics || []).filter(t => progress[t.id]?.status === 'completed').length, 0), 0);
-        return Math.round((completedTopics / totalTopics) * 100);
-    }, [subjects, progress]);
+        if (allTopics.length === 0) return 0;
+        const completedTopics = allTopics.filter(t => progress[t.id]?.status === 'completed').length;
+        return Math.round((completedTopics / allTopics.length) * 100);
+    }, [allTopics, progress]);
 
     const weeklyStudyHours = useMemo(() => {
         if (!isClient || !sessions) return '0.0';
@@ -67,13 +69,13 @@ export function QuickStats() {
     }, [goals?.daily]);
 
     if (loadingSubjects || loadingProgress) {
-        return <div className="grid gap-4 md:grid-cols-3 lg:col-span-2">
+        return <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2">
             {[1,2,3].map(i => <Card key={i} className="h-24"><CardContent className="p-4"><Skeleton className="h-full w-full"/></CardContent></Card>)}
         </div>
     }
 
     return (
-        <div className="grid gap-4 md:grid-cols-3 lg:col-span-2">
+        <div className="grid gap-4 sm:grid-cols-3 lg:col-span-2">
             <StatCard icon={<CheckCircle className="text-green-500" />} label="Overall Completion" value={`${overallCompletion}%`} colorClass="bg-green-100 dark:bg-green-900" />
             <StatCard icon={<Flame className="text-orange-500" />} label="Study Streak" value={`${studyStreak} Days`} colorClass="bg-orange-100 dark:bg-orange-900" />
             <StatCard icon={<BarChart className="text-blue-500" />} label="This Week's Hours" value={`${weeklyStudyHours}h`} colorClass="bg-blue-100 dark:bg-blue-900" />

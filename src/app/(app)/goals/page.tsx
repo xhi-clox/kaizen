@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { DailyGoal } from '@/lib/types';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Schemas
 const examGoalSchema = z.object({
@@ -115,40 +116,44 @@ function ExamGoals() {
                 <DialogTitle>Edit Exam Goals</DialogTitle>
               </DialogHeader>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto p-1">
-                  <FormField control={form.control} name="examDate" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Exam Date</FormLabel>
-                      <FormControl><Input type="date" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="targetGPA" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Target GPA</FormLabel>
-                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Subject Mark Targets</h4>
-                    <div className="space-y-2">
-                      {fields.map((field, index) => {
-                        const subject = subjects.find(s => s.id === field.subjectId);
-                        if (!subject) return null;
-                        return (
-                          <div key={field.id} className="flex items-center gap-2">
-                            <Label className="flex-1" style={{ color: subject.color }}>{subject.name}</Label>
-                            <FormField control={form.control} name={`subjectTargets.${index}.targetMarks`} render={({ field }) => (
-                              <FormItem>
-                                <FormControl><Input type="number" className="w-24 h-8" {...field} /></FormControl>
-                              </FormItem>
-                            )} />
-                          </div>
-                        );
-                      })}
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <ScrollArea className="max-h-[70vh] p-1">
+                    <div className="space-y-4 pr-4">
+                      <FormField control={form.control} name="examDate" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Exam Date</FormLabel>
+                          <FormControl><Input type="date" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="targetGPA" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Target GPA</FormLabel>
+                          <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">Subject Mark Targets</h4>
+                        <div className="space-y-2">
+                          {fields.map((field, index) => {
+                            const subject = subjects.find(s => s.id === field.subjectId);
+                            if (!subject) return null;
+                            return (
+                              <div key={field.id} className="flex items-center gap-2">
+                                <Label className="flex-1" style={{ color: subject.color }}>{subject.name}</Label>
+                                <FormField control={form.control} name={`subjectTargets.${index}.targetMarks`} render={({ field }) => (
+                                  <FormItem>
+                                    <FormControl><Input type="number" className="w-24 h-8" {...field} /></FormControl>
+                                  </FormItem>
+                                )} />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  </ScrollArea>
                   <Button type="submit">Save Changes</Button>
                 </form>
               </Form>
@@ -270,7 +275,7 @@ function DailyGoals() {
             </div>
             <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm"><Edit className="mr-2 h-4 w-4" /> Edit Today&apos;s Goal</Button>
+              <Button variant="outline" size="sm"><Edit className="mr-2 h-4 w-4" /> Edit</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Edit Today&apos;s Goal</DialogTitle></DialogHeader>
@@ -332,7 +337,10 @@ function WeeklyGoals() {
   const weekStart = format(startOfWeek(today, { weekStartsOn: 6 }), 'yyyy-MM-dd'); // Saturday
   const weekEnd = format(endOfWeek(today, { weekStartsOn: 6 }), 'yyyy-MM-dd');
 
-  const currentWeeklyGoal = goals.weekly.find(g => g.weekStart === weekStart);
+  const currentWeeklyGoal = useMemo(() => {
+    return goals.weekly.find(g => g.weekStart === weekStart);
+  }, [goals.weekly, weekStart]);
+
 
   const form = useForm<z.infer<typeof weeklyGoalSchema>>({
     resolver: zodResolver(weeklyGoalSchema),
@@ -367,40 +375,44 @@ function WeeklyGoals() {
       <CardHeader>
         <div className="flex justify-between items-start">
             <div>
-                <CardTitle>This Week&apos;s Goals ({format(new Date(weekStart), 'do MMM')} - {format(new Date(weekEnd), 'do MMM')})</CardTitle>
-                <CardDescription>Define your targets for the current week.</CardDescription>
+                <CardTitle>This Week&apos;s Goals</CardTitle>
+                <CardDescription>{format(new Date(weekStart), 'do MMM')} - {format(new Date(weekEnd), 'do MMM')}</CardDescription>
             </div>
             <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm"><Edit className="mr-2 h-4 w-4" /> Edit Week&apos;s Goal</Button>
+              <Button variant="outline" size="sm"><Edit className="mr-2 h-4 w-4" /> Edit</Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader><DialogTitle>Edit Weekly Goal</DialogTitle></DialogHeader>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto p-1">
-                   <div>
-                    <h4 className="text-sm font-medium mb-2">Chapters to Complete</h4>
-                    <div className="space-y-2">
-                      {fields.map((field, index) => {
-                        const subject = subjects.find(s => s.id === field.subjectId);
-                        if (!subject) return null;
-                        return (
-                          <div key={field.id} className="flex items-center gap-2">
-                            <Label className="flex-1" style={{ color: subject.color }}>{subject.name}</Label>
-                            <FormField control={form.control} name={`targets.${index}.chaptersToComplete`} render={({ field }) => (
-                              <FormItem><FormControl><Input type="number" className="w-20 h-8" {...field} /></FormControl></FormItem>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <ScrollArea className="max-h-[70vh] p-1">
+                        <div className="space-y-4 pr-4">
+                            <div>
+                                <h4 className="text-sm font-medium mb-2">Chapters to Complete</h4>
+                                <div className="space-y-2">
+                                {fields.map((field, index) => {
+                                    const subject = subjects.find(s => s.id === field.subjectId);
+                                    if (!subject) return null;
+                                    return (
+                                    <div key={field.id} className="flex items-center gap-2">
+                                        <Label className="flex-1" style={{ color: subject.color }}>{subject.name}</Label>
+                                        <FormField control={form.control} name={`targets.${index}.chaptersToComplete`} render={({ field }) => (
+                                        <FormItem><FormControl><Input type="number" className="w-20 h-8" {...field} /></FormControl></FormItem>
+                                        )} />
+                                    </div>
+                                    );
+                                })}
+                                </div>
+                            </div>
+                            <FormField control={form.control} name="revisionHours" render={({ field }) => (
+                                <FormItem><FormLabel>Revision Hours</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
                             )} />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <FormField control={form.control} name="revisionHours" render={({ field }) => (
-                    <FormItem><FormLabel>Revision Hours</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="mockTests" render={({ field }) => (
-                    <FormItem><FormLabel>Mock Tests</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
-                  )} />
+                            <FormField control={form.control} name="mockTests" render={({ field }) => (
+                                <FormItem><FormLabel>Mock Tests</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                            )} />
+                        </div>
+                    </ScrollArea>
                   <Button type="submit">Save Goal</Button>
                 </form>
               </Form>
@@ -496,13 +508,14 @@ function MonthlyGoals() {
                     </div>
                     <Dialog open={open} onOpenChange={setOpen}>
                         <DialogTrigger asChild>
-                            <Button variant="outline" size="sm"><Edit className="mr-2 h-4 w-4" /> Edit Month&apos;s Goal</Button>
+                            <Button variant="outline" size="sm"><Edit className="mr-2 h-4 w-4" /> Edit</Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-md">
                             <DialogHeader><DialogTitle>Edit Monthly Goals</DialogTitle></DialogHeader>
                             <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto p-1">
-                                    <div>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                  <ScrollArea className="max-h-[70vh] p-1">
+                                    <div className="pr-4 space-y-4">
                                         <h4 className="text-sm font-medium mb-2">Subject Completion Milestones</h4>
                                         <div className="space-y-2">
                                             {fields.map((field, index) => {
@@ -526,6 +539,7 @@ function MonthlyGoals() {
                                             })}
                                         </div>
                                     </div>
+                                    </ScrollArea>
                                     <Button type="submit">Save Goals</Button>
                                 </form>
                             </Form>
@@ -571,7 +585,7 @@ export default function GoalsPage() {
       
       {subjects.length > 0 ? (
         <Tabs defaultValue="exam" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="exam">Exam</TabsTrigger>
             <TabsTrigger value="daily">Daily</TabsTrigger>
             <TabsTrigger value="weekly">Weekly</TabsTrigger>
@@ -602,5 +616,3 @@ export default function GoalsPage() {
     </div>
   );
 }
-
-    

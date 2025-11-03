@@ -12,7 +12,7 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 const CustomYAxisTick = (props: any) => {
     const { x, y, payload, width } = props;
     return (
-        <Text x={x} y={y} width={width} textAnchor="end" verticalAnchor="middle" fill="hsl(var(--foreground))" style={{ fontSize: '12px' }}>
+        <Text x={x} y={y} width={width} textAnchor="end" verticalAnchor="middle" fill="hsl(var(--foreground))" className="text-xs sm:text-sm">
             {payload.value}
         </Text>
     );
@@ -24,13 +24,15 @@ export default function ProgressPage() {
   const [sessions] = useStudySessions();
   const [progress] = useProgress();
 
+  const allTopics = useMemo(() => {
+    return subjects.flatMap(s => s.chapters.flatMap(c => c.topics));
+  }, [subjects]);
+
   const overallCompletion = useMemo(() => {
-    if (!subjects) return 0;
-    const allTopics = subjects.flatMap(s => s.chapters.flatMap(c => c.topics));
     if (allTopics.length === 0) return 0;
     const completed = allTopics.filter(t => progress[t.id]?.status === 'completed').length;
     return (completed / allTopics.length) * 100;
-  }, [subjects, progress]);
+  }, [allTopics, progress]);
 
   const totalStudyTime = useMemo(() => {
     if (!sessions) return 0;
@@ -42,6 +44,7 @@ export default function ProgressPage() {
     
     const shortenName = (name: string) => {
         if (name.includes('ICT')) return 'ICT';
+        if (name.includes('Information')) return 'ICT';
         
         const replacements: {[key: string]: string} = {
             'Bangla': 'BAN',
@@ -64,9 +67,16 @@ export default function ProgressPage() {
     return subjects
       .sort((a, b) => (a as any).order - (b as any).order)
       .map(subject => {
-        const allTopics = (subject.chapters || []).flatMap(c => c.topics);
-        const completed = allTopics.filter(t => progress[t.id]?.status === 'completed').length;
-        const progressPercentage = allTopics.length > 0 ? (completed / allTopics.length) * 100 : 0;
+        const subjectTopics = (subject.chapters || []).flatMap(c => c.topics);
+        if (subjectTopics.length === 0) {
+            return {
+                name: shortenName(subject.name), 
+                progress: 0, 
+                fill: subject.color 
+            }
+        }
+        const completed = subjectTopics.filter(t => progress[t.id]?.status === 'completed').length;
+        const progressPercentage = (completed / subjectTopics.length) * 100;
         return { 
             name: shortenName(subject.name), 
             progress: Math.round(progressPercentage), 
@@ -118,7 +128,7 @@ export default function ProgressPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Overall Progress</CardTitle>
@@ -160,7 +170,7 @@ export default function ProgressPage() {
           <CardContent>
             <ChartContainer config={chartConfig} className="h-96 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 20, right: 30, top: 10, bottom: 10 }}>
+                <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 10, right: 30, top: 10, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} unit="%" />
                   <YAxis 

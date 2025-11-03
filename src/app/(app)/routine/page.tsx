@@ -17,6 +17,7 @@ import { nanoid } from 'nanoid';
 import { useState } from 'react';
 import { WEEK_DAYS } from '@/lib/constants';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { generateAdaptiveRoutine, type AdaptiveRoutineInput } from '@/ai/flows/adaptive-routine-generation';
 
@@ -119,7 +120,7 @@ export default function RoutinePage() {
   const { toast } = useToast();
 
   const handleSaveSlot = (day: WeekDay, slot: RoutineSlot) => {
-    const newRoutine = {
+    const updatedRoutine = {
       ...routine,
       weekSchedule: routine.weekSchedule.map(d =>
         d.day === day
@@ -127,11 +128,11 @@ export default function RoutinePage() {
           : d
       )
     };
-    setRoutine(newRoutine);
+    setRoutine(updatedRoutine);
   };
   
   const handleDeleteSlot = (day: WeekDay, slotId: string) => {
-    const newRoutine = {
+    const updatedRoutine = {
       ...routine,
       weekSchedule: routine.weekSchedule.map(d =>
         d.day === day
@@ -139,7 +140,7 @@ export default function RoutinePage() {
           : d
       )
     };
-    setRoutine(newRoutine);
+    setRoutine(updatedRoutine);
   }
 
   const handleGenerateRoutine = async () => {
@@ -217,25 +218,29 @@ export default function RoutinePage() {
                 <CardTitle className="capitalize">{day}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {daySchedule?.slots.map(slot => {
-                  const subject = getSubject(slot);
-                  return (
-                    <div key={slot.id} className="text-sm p-2 rounded-md border" style={{ borderLeft: `4px solid ${subject?.color || '#ccc'}`}}>
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="font-semibold">{subject?.name || 'Unnamed Activity'}</p>
-                                <p className="text-xs text-muted-foreground">{slot.startTime} - {slot.endTime}</p>
-                            </div>
-                            <div className="flex items-center">
-                                <RoutineSlotForm day={day} slot={slot} onSave={handleSaveSlot} />
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDeleteSlot(day, slot.id)}>
-                                    <Trash2 className="h-3 w-3" />
-                                </Button>
+                <ScrollArea className="h-96 pr-3">
+                  <div className="space-y-2">
+                    {daySchedule?.slots.map(slot => {
+                      const subject = getSubject(slot);
+                      return (
+                        <div key={slot.id} className="text-sm p-2 rounded-md border" style={{ borderLeft: `4px solid ${subject?.color || '#ccc'}`}}>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-semibold">{subject?.name || 'Unnamed Activity'}</p>
+                                    <p className="text-xs text-muted-foreground">{slot.startTime} - {slot.endTime}</p>
+                                </div>
+                                <div className="flex items-center">
+                                    <RoutineSlotForm day={day} slot={slot} onSave={handleSaveSlot} />
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDeleteSlot(day, slot.id)}>
+                                        <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
                 <RoutineSlotForm day={day} onSave={handleSaveSlot} />
               </CardContent>
             </Card>

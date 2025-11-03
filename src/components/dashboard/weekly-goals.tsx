@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 import Link from 'next/link';
 import { Calendar } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ScrollArea } from '../ui/scroll-area';
 
 export function WeeklyGoals() {
     const [goals] = useGoals();
@@ -28,8 +29,8 @@ export function WeeklyGoals() {
         return name;
     }
 
-    const targetsToShow = currentWeeklyGoal?.targets.slice(0, 3) || [];
     const allTargets = currentWeeklyGoal?.targets || [];
+    const targetsToShow = allTargets.slice(0, 3);
 
     return (
         <Card>
@@ -48,18 +49,20 @@ export function WeeklyGoals() {
                                 <DialogHeader>
                                     <DialogTitle>All Chapter Targets for the Week</DialogTitle>
                                 </DialogHeader>
-                                <ul className="space-y-3 py-4">
-                                    {allTargets.map(t => {
-                                        const subject = subjects.find(s => s.id === t.subjectId);
-                                        if (!subject) return null;
-                                        return (
-                                            <li key={t.subjectId} className="flex justify-between items-center">
-                                                <span style={{ color: subject.color }}>{shortenSubjectName(subject.name)}</span>
-                                                <span className='font-semibold'>{t.chaptersToComplete} chapters</span>
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
+                                <ScrollArea className="h-96">
+                                    <ul className="space-y-3 py-4 pr-4">
+                                        {allTargets.map(t => {
+                                            const subject = subjects.find(s => s.id === t.subjectId);
+                                            if (!subject) return null;
+                                            return (
+                                                <li key={t.subjectId} className="flex justify-between items-center">
+                                                    <span style={{ color: subject.color }}>{shortenSubjectName(subject.name)}</span>
+                                                    <span className='font-semibold'>{t.chaptersToComplete} chapters</span>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                </ScrollArea>
                             </DialogContent>
                         </Dialog>
                     )}
@@ -83,7 +86,7 @@ export function WeeklyGoals() {
                                 }) : <p className="text-sm text-muted-foreground">No chapter targets set.</p>}
                             </ul>
                         </div>
-                        <div className="space-y-2 text-right">
+                        <div className="space-y-4 text-left md:text-right">
                              <div>
                                 <h4 className="font-medium text-muted-foreground">Revision</h4>
                                 <p className="text-lg font-bold">{currentWeeklyGoal.revisionHours} hours</p>

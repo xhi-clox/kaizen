@@ -39,21 +39,21 @@ export default function DashboardPage() {
         <div className="space-y-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <Skeleton className="h-8 w-64 mb-2" />
-                    <Skeleton className="h-4 w-80" />
+                    <Skeleton className="h-8 w-48 md:w-64 mb-2" />
+                    <Skeleton className="h-4 w-64 md:w-80" />
                 </div>
                 <div className="flex items-center gap-2">
-                    <Skeleton className="h-10 w-48" />
-                    <Skeleton className="h-10 w-36" />
+                    <Skeleton className="h-10 w-full md:w-48" />
+                    <Skeleton className="h-10 w-full md:w-36" />
                 </div>
             </div>
-            <div className="grid gap-6 lg:grid-cols-3">
-                <Skeleton className="h-40" />
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <Skeleton className="h-40 md:col-span-2 lg:col-span-1" />
                 <Skeleton className="h-40" />
             </div>
             <div className="grid gap-6 lg:grid-cols-5">
-                <div className="lg:col-span-3"><Skeleton className="h-64" /></div>
-                <div className="lg:col-span-2"><Skeleton className="h-64" /></div>
+                <div className="lg:col-span-3 space-y-6"><Skeleton className="h-64" /><Skeleton className="h-64" /></div>
+                <div className="lg:col-span-2"><Skeleton className="h-[40rem]" /></div>
             </div>
             <div>
                 <Skeleton className="h-80" />
@@ -76,17 +76,17 @@ export default function DashboardPage() {
           </h1>
           <p className="text-muted-foreground">{quote}</p>
         </div>
-        <div className="flex items-center gap-2">
-            <Button asChild>
+        <div className="flex flex-col sm:flex-row items-center gap-2">
+            <Button asChild className="w-full sm:w-auto">
                 <Link href="/study-session"><Timer className="mr-2" />Start Study Session</Link>
             </Button>
-            <Button variant="secondary" asChild>
+            <Button variant="secondary" asChild className="w-full sm:w-auto">
                  <Link href="/subjects"><BookCopy className="mr-2" />Log Progress</Link>
             </Button>
         </div>
       </div>
       
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Countdown />
         <QuickStats />
       </div>

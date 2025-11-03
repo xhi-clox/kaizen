@@ -47,8 +47,8 @@ export function TodaysRoutine() {
                         {todaysSchedule.slots.map(slot => {
                             const subject = getSubject(slot.subjectId);
                             return (
-                                <div key={slot.id} className="flex items-center gap-4 p-3 rounded-lg border" style={{ borderLeft: `4px solid ${subject?.color || '#ccc'}`}}>
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground w-28">
+                                <div key={slot.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 rounded-lg border" style={{ borderLeft: `4px solid ${subject?.color || '#ccc'}`}}>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground w-full sm:w-28">
                                         <Clock className="h-4 w-4" />
                                         <span>{slot.startTime} - {slot.endTime}</span>
                                     </div>

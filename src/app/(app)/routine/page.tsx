@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRoutine, useSubjects, useSettings, useProfile } from '@/hooks/use-app-data';
@@ -118,25 +119,27 @@ export default function RoutinePage() {
   const { toast } = useToast();
 
   const handleSaveSlot = (day: WeekDay, slot: RoutineSlot) => {
-    setRoutine(prev => ({
-      ...prev,
-      weekSchedule: prev.weekSchedule.map(d => 
-        d.day === day 
-        ? { ...d, slots: [...d.slots.filter(s => s.id !== slot.id), slot].sort((a,b) => a.startTime.localeCompare(b.startTime)) } 
-        : d
+    const newRoutine = {
+      ...routine,
+      weekSchedule: routine.weekSchedule.map(d =>
+        d.day === day
+          ? { ...d, slots: [...d.slots.filter(s => s.id !== slot.id), slot].sort((a, b) => a.startTime.localeCompare(b.startTime)) }
+          : d
       )
-    }));
+    };
+    setRoutine(newRoutine);
   };
   
   const handleDeleteSlot = (day: WeekDay, slotId: string) => {
-    setRoutine(prev => ({
-      ...prev,
-      weekSchedule: prev.weekSchedule.map(d => 
-        d.day === day 
-        ? { ...d, slots: d.slots.filter(s => s.id !== slotId) } 
-        : d
+    const newRoutine = {
+      ...routine,
+      weekSchedule: routine.weekSchedule.map(d =>
+        d.day === day
+          ? { ...d, slots: d.slots.filter(s => s.id !== slotId) }
+          : d
       )
-    }));
+    };
+    setRoutine(newRoutine);
   }
 
   const handleGenerateRoutine = async () => {

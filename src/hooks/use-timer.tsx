@@ -20,9 +20,10 @@ interface TimerState {
     sessionCount: number;
     manualDuration: number;
     startTime: number | null; // Timestamp
+    elapsedTime: number; // Seconds
 }
 
-interface TimerContextProps extends TimerState {
+interface TimerContextProps extends Omit<TimerState, 'elapsedTime'> {
   timeLeft: number;
   isTimerVisible: boolean;
   setManualDuration: (duration: number) => void;
@@ -45,6 +46,7 @@ const getInitialState = (): TimerState => {
         sessionCount: storedState.sessionCount || 0,
         manualDuration: storedState.manualDuration || defaultWorkDuration,
         startTime: storedState.startTime || null,
+        elapsedTime: storedState.elapsedTime || 0,
     };
 };
 
@@ -83,14 +85,14 @@ export function TimerProvider({ children }: { children: ReactNode }) {
             return;
         }
         const now = Date.now();
-        const elapsed = Math.floor((now - state.startTime) / 1000);
-        const remaining = getTimerDuration() - elapsed;
+        const currentElapsed = Math.floor((now - state.startTime) / 1000);
+        const remaining = getTimerDuration() - (state.elapsedTime + currentElapsed);
         
         if (remaining <= 0) {
             setTimeLeft(0);
             if (state.isActive) {
                  // The page itself will handle session end logic, but we stop the timer here
-                setState(s => ({ ...s, isActive: false, startTime: null }));
+                setState(s => ({ ...s, isActive: false, startTime: null, elapsedTime: 0 }));
             }
         } else {
             setTimeLeft(remaining);
@@ -101,21 +103,26 @@ export function TimerProvider({ children }: { children: ReactNode }) {
       calculateTimeLeft(); // Initial calculation
       interval = setInterval(calculateTimeLeft, 1000);
     } else {
-        // If paused, ensure timeLeft reflects the duration for the current (potentially new) session type
-        setTimeLeft(getTimerDuration());
+        const remaining = getTimerDuration() - state.elapsedTime;
+        setTimeLeft(remaining > 0 ? remaining : getTimerDuration());
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [state.isActive, state.startTime, getTimerDuration]);
+  }, [state.isActive, state.startTime, state.elapsedTime, getTimerDuration]);
 
   // Update duration when settings change and timer isn't running
   useEffect(() => {
     if (!state.isActive) {
-      setState(s => ({ ...s, manualDuration: settings.pomodoro.work }));
+        if (state.sessionType === 'work') {
+            setState(s => ({ ...s, manualDuration: settings.pomodoro.work, elapsedTime: 0 }));
+        } else {
+            setState(s => ({...s, elapsedTime: 0}));
+        }
     }
-  }, [settings.pomodoro.work, state.isActive]);
+  }, [settings.pomodoro.work, settings.pomodoro.shortBreak, settings.pomodoro.longBreak, state.sessionType, state.isActive]);
+
 
   const startTimer = () => {
     const duration = getTimerDuration();
@@ -126,7 +133,14 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   };
 
   const pauseTimer = () => {
-    setState(s => ({ ...s, isActive: false, startTime: null }));
+    if (!state.isActive || !state.startTime) return;
+    const currentElapsed = Math.floor((Date.now() - state.startTime) / 1000);
+    setState(s => ({ 
+        ...s, 
+        isActive: false, 
+        startTime: null,
+        elapsedTime: s.elapsedTime + currentElapsed,
+    }));
   };
 
   const resetTimer = () => {
@@ -135,6 +149,9 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         manualDuration: settings.pomodoro.work,
         sessionType: 'work',
         sessionCount: 0,
+        elapsedTime: 0,
+        isActive: false,
+        startTime: null,
     });
     setIsTimerVisible(false);
   };
@@ -149,6 +166,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         sessionType: nextSessionType,
         sessionCount: newSessionCount,
         startTime: Date.now(),
+        elapsedTime: 0,
     });
     setIsTimerVisible(true);
   }
@@ -161,7 +179,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
             ...s,
             isActive: false,
             sessionType: 'work',
-            startTime: null
+            startTime: null,
+            elapsedTime: 0,
         }));
         setIsTimerVisible(false);
     }
@@ -169,12 +188,16 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   
   const setManualDuration = (duration: number) => {
       if (!state.isActive) {
-          setState(s => ({ ...s, manualDuration: duration }));
+          setState(s => ({ ...s, manualDuration: duration, elapsedTime: 0 }));
       }
   };
 
   const value: TimerContextProps = {
-    ...state,
+    sessionType: state.sessionType,
+    isActive: state.isActive,
+    sessionCount: state.sessionCount,
+    manualDuration: state.manualDuration,
+    startTime: state.startTime,
     timeLeft,
     isTimerVisible,
     setIsTimerVisible,

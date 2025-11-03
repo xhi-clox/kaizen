@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -147,20 +148,16 @@ export default function StudySessionPage() {
   }
 
 
-  const toggleTimer = () => {
-    if (isActive) {
-      pauseTimer();
-    } else {
-      if (sessionType === 'work' && (!selectedSubject || !selectedTopic)) {
-        toast({
-          variant: 'destructive',
-          title: 'Missing information',
-          description: 'Please select a subject and topic before starting.',
-        });
-        return;
-      }
-      startTimer();
+  const handleStartTimer = () => {
+    if (sessionType === 'work' && (!selectedSubject || !selectedTopic)) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing information',
+        description: 'Please select a subject and topic before starting.',
+      });
+      return;
     }
+    startTimer();
   };
   
   const handleSkip = () => {
@@ -324,13 +321,12 @@ export default function StudySessionPage() {
           <Button variant="ghost" size="icon" onClick={resetTimer}>
             <RefreshCw className="h-6 w-6" />
           </Button>
-          <Button size="lg" className="w-32" onClick={toggleTimer}>
-            {isActive ? (
-              <Pause className="mr-2 h-5 w-5" />
-            ) : (
-              <Play className="mr-2 h-5 w-5" />
-            )}
-            {isActive ? 'Pause' : 'Start'}
+          <Button size="lg" className="w-32" onClick={handleStartTimer} disabled={isActive}>
+            <Play className="mr-2 h-5 w-5" />
+            Start
+          </Button>
+          <Button variant="outline" size="icon" onClick={pauseTimer} disabled={!isActive}>
+            <Pause className="h-6 w-6" />
           </Button>
           <Button variant="ghost" size="icon" onClick={handleSkip} disabled={sessionType === 'work'}>
             <SkipForward className="h-6 w-6" />

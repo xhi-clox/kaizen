@@ -6,17 +6,8 @@ import {
 } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Header } from '@/components/header';
-import { redirect } from 'next/navigation';
-import { getItem } from '@/lib/storage';
-import { UserProfile } from '@/lib/types';
-
 
 export default function AppLayout({ children }: { children: ReactNode }) {
-  const profile = getItem<UserProfile | null>('hsc-profile', null);
-  if (!profile || !profile.name) {
-    redirect('/welcome');
-  }
-  
   return (
     <SidebarProvider>
         <div className="min-h-screen w-full bg-background">

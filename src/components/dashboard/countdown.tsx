@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { differenceInSeconds } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useProfile } from '@/hooks/use-app-data';
+import { Button } from '../ui/button';
+import { Edit } from 'lucide-react';
+import Link from 'next/link';
 
 export function Countdown() {
   const [profile] = useProfile();
@@ -43,8 +46,17 @@ export function Countdown() {
   return (
     <Card className="lg:col-span-1">
       <CardHeader>
-        <CardTitle>Countdown to HSC Exam</CardTitle>
-        <CardDescription>Time is ticking. Make every second count!</CardDescription>
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle>Countdown to HSC Exam</CardTitle>
+                <CardDescription>Time is ticking. Make every second count!</CardDescription>
+            </div>
+            <Button variant="ghost" size="icon" asChild>
+                <Link href="/settings">
+                    <Edit className="h-4 w-4" />
+                </Link>
+            </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-4 gap-2 text-center">

@@ -42,7 +42,22 @@ export default function ProgressPage() {
     
     const shortenName = (name: string) => {
         if (name.includes('ICT')) return 'ICT';
-        return name.replace(' Paper', '');
+        
+        const replacements: {[key: string]: string} = {
+            'Bangla': 'BAN',
+            'English': 'ENG',
+            'Physics': 'PHY',
+            'Chemistry': 'CHEM',
+            'Biology': 'BIO',
+            'Higher Math': 'H. Math',
+            ' Paper': '',
+        };
+
+        let shortName = name;
+        for (const key in replacements) {
+            shortName = shortName.replace(key, replacements[key]);
+        }
+        return shortName;
     }
 
     return subjects
@@ -128,13 +143,13 @@ export default function ProgressPage() {
           <CardContent>
             <ChartContainer config={{}} className="h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 10, right: 30, top: 10, bottom: 10 }}>
+                <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 20, right: 30, top: 10, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} unit="%" />
                   <YAxis 
                     type="category" 
                     dataKey="name" 
-                    width={150} 
+                    width={80} 
                     tickLine={false} 
                     axisLine={false}
                     tick={<CustomYAxisTick />}

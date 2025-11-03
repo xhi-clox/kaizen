@@ -12,7 +12,15 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 const CustomYAxisTick = (props: any) => {
     const { x, y, payload, width } = props;
     return (
-        <Text x={x} y={y} width={width} textAnchor="end" verticalAnchor="middle" fill="hsl(var(--foreground))" className="text-xs sm:text-sm">
+        <Text 
+            x={x} 
+            y={y} 
+            width={width} 
+            textAnchor="end" 
+            verticalAnchor="middle" 
+            fill="hsl(var(--foreground))" 
+            className="text-xs sm:text-sm"
+        >
             {payload.value}
         </Text>
     );
@@ -170,13 +178,18 @@ export default function ProgressPage() {
           <CardContent>
             <ChartContainer config={chartConfig} className="h-96 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 10, right: 30, top: 10, bottom: 10 }}>
+                <BarChart 
+                    data={subjectProgressData} 
+                    layout="vertical" 
+                    margin={{ left: 10, right: 30, top: 10, bottom: 10, }}
+                    className="[&_.recharts-cartesian-axis-tick_text]:text-xs sm:[&_.recharts-cartesian-axis-tick_text]:text-sm"
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} unit="%" />
                   <YAxis 
                     type="category" 
                     dataKey="name" 
-                    width={80} 
+                    width={60}
                     tickLine={false} 
                     axisLine={false}
                     tick={<CustomYAxisTick />}
@@ -198,8 +211,8 @@ export default function ProgressPage() {
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={weeklyStudyData}>
                         <CartesianGrid vertical={false} />
-                        <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
-                        <YAxis />
+                        <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} className="text-xs sm:text-sm" />
+                        <YAxis className="text-xs sm:text-sm" />
                         <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
                         <Bar dataKey="hours" fill="hsl(var(--primary))" radius={4} />
                     </BarChart>

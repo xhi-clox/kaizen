@@ -4,10 +4,11 @@
 import { useSubjects, useStudySessions, useProgress } from '@/hooks/use-app-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Text } from 'recharts';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import { Target, Clock, BookOpen } from 'lucide-react';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const CustomYAxisTick = (props: any) => {
     const { x, y, payload, width } = props;
@@ -31,6 +32,11 @@ export default function ProgressPage() {
   const [subjects] = useSubjects();
   const [sessions] = useStudySessions();
   const [progress] = useProgress();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const allTopics = useMemo(() => {
     return subjects.flatMap(s => s.chapters.flatMap(c => c.topics));
@@ -127,6 +133,62 @@ export default function ProgressPage() {
     };
   }, [subjectProgressData]);
 
+  const subjectCompletionChart = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Subject Completion</CardTitle>
+        <CardDescription>Your progress in each subject.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer config={chartConfig} className="h-80 sm:h-96 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart 
+                data={subjectProgressData} 
+                layout="vertical" 
+                margin={{ left: 10, right: 30, top: 10, bottom: 10, }}
+                className="[&_.recharts-cartesian-axis-tick_text]:text-xs sm:[&_.recharts-cartesian-axis-tick_text]:text-sm"
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" domain={[0, 100]} unit="%" />
+              <YAxis 
+                type="category" 
+                dataKey="name" 
+                width={60}
+                tickLine={false} 
+                axisLine={false}
+                tick={<CustomYAxisTick />}
+              />
+              <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
+              <Bar dataKey="progress" background={{ fill: 'hsl(var(--muted))' }} radius={[4, 4, 4, 4]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+
+  const weeklyStudyChart = (
+     <Card>
+          <CardHeader>
+            <CardTitle>This Week&apos;s Study Hours</CardTitle>
+            <CardDescription>Your daily study time for the current week.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={{ hours: { label: 'Hours', color: 'hsl(var(--primary))'}}} className="h-80 sm:h-96 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={weeklyStudyData}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} className="text-xs sm:text-sm" />
+                        <YAxis className="text-xs sm:text-sm" />
+                        <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
+                        <Bar dataKey="hours" fill="hsl(var(--primary))" radius={4} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -168,59 +230,33 @@ export default function ProgressPage() {
           </CardContent>
         </Card>
       </div>
+      
+      {isClient && (
+        <>
+          {/* Mobile and Tablet View: Tabs */}
+          <div className="lg:hidden">
+            <Tabs defaultValue="completion" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="completion">Completion</TabsTrigger>
+                <TabsTrigger value="study_hours">Study Hours</TabsTrigger>
+              </TabsList>
+              <TabsContent value="completion">
+                {subjectCompletionChart}
+              </TabsContent>
+              <TabsContent value="study_hours">
+                {weeklyStudyChart}
+              </TabsContent>
+            </Tabs>
+          </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Subject Completion</CardTitle>
-            <CardDescription>Your progress in each subject.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-96 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart 
-                    data={subjectProgressData} 
-                    layout="vertical" 
-                    margin={{ left: 10, right: 30, top: 10, bottom: 10, }}
-                    className="[&_.recharts-cartesian-axis-tick_text]:text-xs sm:[&_.recharts-cartesian-axis-tick_text]:text-sm"
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" domain={[0, 100]} unit="%" />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
-                    width={60}
-                    tickLine={false} 
-                    axisLine={false}
-                    tick={<CustomYAxisTick />}
-                  />
-                  <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
-                  <Bar dataKey="progress" background={{ fill: 'hsl(var(--muted))' }} radius={[4, 4, 4, 4]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>This Week&apos;s Study Hours</CardTitle>
-            <CardDescription>Your daily study time for the current week.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={{ hours: { label: 'Hours', color: 'hsl(var(--primary))'}}} className="h-96 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={weeklyStudyData}>
-                        <CartesianGrid vertical={false} />
-                        <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} className="text-xs sm:text-sm" />
-                        <YAxis className="text-xs sm:text-sm" />
-                        <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<ChartTooltipContent />} />
-                        <Bar dataKey="hours" fill="hsl(var(--primary))" radius={4} />
-                    </BarChart>
-                </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Desktop View: Grid */}
+          <div className="hidden lg:grid lg:grid-cols-2 gap-6">
+            {subjectCompletionChart}
+            {weeklyStudyChart}
+          </div>
+        </>
+      )}
     </div>
   );
-}
+
+    

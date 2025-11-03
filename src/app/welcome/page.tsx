@@ -55,11 +55,10 @@ export default function WelcomePage() {
     resolver: zodResolver(FormSchema),
     defaultValues: {
       name: '',
-      examDate: undefined, // Set to undefined initially to avoid hydration mismatch
+      examDate: undefined,
     },
   });
 
-  // Set default exam date on client side to avoid hydration error
   useEffect(() => {
     form.setValue('examDate', new Date(new Date().setMonth(new Date().getMonth() + 6)));
   }, [form]);
@@ -82,6 +81,7 @@ export default function WelcomePage() {
             description: "Something went wrong setting up your account.",
             variant: 'destructive',
         });
+    } finally {
         setLoading(null);
     }
   }
@@ -103,6 +103,7 @@ export default function WelcomePage() {
             description: "Something went wrong setting up your account.",
             variant: 'destructive',
         });
+    } finally {
         setLoading(null);
     }
   }

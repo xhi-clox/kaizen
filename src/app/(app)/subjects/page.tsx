@@ -60,11 +60,14 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useSubjects } from '@/hooks/use-app-data';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { BookCopy, CheckCircle, Edit, PlusCircle, Trash2 } from 'lucide-react';
+import { BookCopy, CheckCircle, Edit, PlusCircle, Trash2, BrainCircuit } from 'lucide-react';
 import { nanoid } from 'nanoid';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { useToast } from '@/hooks/use-toast';
+import { generateSyllabus } from '@/ai/flows/generate-syllabus-flow';
+
 
 import type { Subject, Chapter, Topic } from '@/lib/types';
 import { NCTB_SUBJECTS } from '@/lib/constants';
@@ -283,6 +286,8 @@ function TopicItem({
 
 export default function SubjectsPage() {
   const [subjects, setSubjects] = useSubjects();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
 
   const subjectsWithProgress = useMemo(() => {
     return subjects.map((subject) => {
@@ -373,6 +378,31 @@ export default function SubjectsPage() {
     );
   };
 
+  const handleGenerateSyllabus = async () => {
+    setIsGenerating(true);
+    toast({
+        title: 'Generating Syllabus...',
+        description: 'The AI is building your complete syllabus. This may take a moment.',
+    });
+    try {
+        const result = await generateSyllabus({ curriculumName: 'NCTB HSC Science Group' });
+        setSubjects(result.subjects as Subject[]);
+        toast({
+            title: 'Syllabus Generated!',
+            description: 'Your new AI-generated syllabus has been loaded.',
+        });
+    } catch (error) {
+        console.error("Error generating syllabus:", error);
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: "Could not generate the syllabus. Please try again.",
+        });
+    } finally {
+        setIsGenerating(false);
+    }
+  }
+
 
   if (subjects.length === 0) {
     return (
@@ -384,8 +414,14 @@ export default function SubjectsPage() {
             <CardContent>
                 <div className="flex flex-col items-center justify-center gap-4 text-center py-10 border-2 border-dashed rounded-lg">
                     <BookCopy className="w-12 h-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">You haven&apos;t added any subjects yet. Add one to get started.</p>
-                    <SubjectForm onSave={handleAddSubject} />
+                    <p className="text-muted-foreground">You haven&apos;t added any subjects yet. Add one manually or let AI generate it for you.</p>
+                    <div className="flex gap-2">
+                        <SubjectForm onSave={handleAddSubject} />
+                        <Button variant="outline" onClick={handleGenerateSyllabus} disabled={isGenerating}>
+                            <BrainCircuit className="mr-2 h-4 w-4" />
+                            {isGenerating ? 'Generating...' : 'Generate with AI'}
+                        </Button>
+                    </div>
                 </div>
             </CardContent>
         </Card>
@@ -399,35 +435,39 @@ export default function SubjectsPage() {
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Subjects & Syllabus</h1>
           <p className="text-muted-foreground">Manage your subjects, chapters, and topics to track your progress.</p>
         </div>
-        <SubjectForm onSave={handleAddSubject} />
+        <div className="flex gap-2">
+            <SubjectForm onSave={handleAddSubject} />
+            <Button variant="outline" onClick={handleGenerateSyllabus} disabled={isGenerating}>
+                <BrainCircuit className="mr-2 h-4 w-4" />
+                {isGenerating ? 'Generating...' : 'Generate with AI'}
+            </Button>
+        </div>
       </div>
 
       <Accordion type="single" collapsible className="w-full space-y-4">
         {subjectsWithProgress.map((subject) => (
           <AccordionItem value={subject.id} key={subject.id} className="border-0">
             <Card id={subject.id}>
-              <CardHeader className="p-4">
-                <AccordionTrigger className="w-full p-0 hover:no-underline">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div
-                      className="h-8 w-1.5 rounded-full"
-                      style={{ backgroundColor: subject.color }}
-                    ></div>
-                    <div className="flex-1 text-left">
-                      <CardTitle className="text-xl">{subject.name}</CardTitle>
-                      <CardDescription>
-                        {subject.completedCount} / {subject.topicCount} topics completed
-                      </CardDescription>
-                    </div>
-                    <div className="flex items-center gap-4">
-                       <div className="text-right">
-                          <span className="font-bold">{subject.progress}%</span>
-                          <Progress value={subject.progress} indicatorColor={subject.color} className="w-24 h-1.5" />
-                      </div>
+              <AccordionTrigger className="w-full p-4 hover:no-underline [&[data-state=open]]:pb-0">
+                <div className="flex items-center gap-4 flex-1">
+                  <div
+                    className="h-8 w-1.5 rounded-full"
+                    style={{ backgroundColor: subject.color }}
+                  ></div>
+                  <div className="flex-1 text-left">
+                    <CardTitle className="text-xl">{subject.name}</CardTitle>
+                    <CardDescription>
+                      {subject.completedCount} / {subject.topicCount} topics completed
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <span className="font-bold">{subject.progress}%</span>
+                        <Progress value={subject.progress} indicatorColor={subject.color} className="w-24 h-1.5" />
                     </div>
                   </div>
-                </AccordionTrigger>
-              </CardHeader>
+                </div>
+              </AccordionTrigger>
               <AccordionContent>
                 <CardContent className="p-4 pt-0 space-y-2">
                   <div className="flex items-center justify-end gap-2 p-2">

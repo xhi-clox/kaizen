@@ -84,7 +84,7 @@ export default function StudySessionPage() {
   }, [sessionType, manualDuration]);
 
   const handleSessionEnd = useCallback(() => {
-    if (sessionType === 'work' && isActive === false) { // Check isActive to ensure it just finished
+    if (sessionType === 'work') { 
         if (selectedSubject && selectedTopic) {
             const subject = subjects.find(s => s.id === selectedSubject);
             if (!subject) return;
@@ -109,15 +109,15 @@ export default function StudySessionPage() {
             toast({ title: "Time for a break!" });
         }
     }
-  }, [sessionType, selectedSubject, selectedTopic, manualDuration, sessionNotes, addSession, toast, subjects, endWorkSession, isActive]);
+  }, [sessionType, selectedSubject, selectedTopic, manualDuration, sessionNotes, addSession, toast, subjects, endWorkSession]);
 
 
   // When timer hits 0, handle the session end logic
   useEffect(() => {
-    if (timeLeft === 0) {
+    if (timeLeft === 0 && isActive) {
       handleSessionEnd();
     }
-  }, [timeLeft, handleSessionEnd]);
+  }, [timeLeft, isActive, handleSessionEnd]);
 
 
   const availableChapters = useMemo(() => {
@@ -164,11 +164,8 @@ export default function StudySessionPage() {
   };
   
   const handleSkip = () => {
-    // Manually trigger session end logic if skipping a work session
-    if (sessionType === 'work') {
-      handleSessionEnd();
-    } else {
-      // If skipping a break, just skip it.
+    // Only allow skipping breaks, not work sessions.
+    if (sessionType !== 'work') {
       skipTimer();
     }
   }
@@ -335,7 +332,7 @@ export default function StudySessionPage() {
             )}
             {isActive ? 'Pause' : 'Start'}
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleSkip}>
+          <Button variant="ghost" size="icon" onClick={handleSkip} disabled={sessionType === 'work'}>
             <SkipForward className="h-6 w-6" />
           </Button>
         </CardFooter>

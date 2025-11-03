@@ -172,9 +172,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   }
 
   const skipTimer = () => {
-    if (state.sessionType === 'work') {
-        endWorkSession(false);
-    } else { // Is a break
+    // Only allow skipping break sessions
+    if (state.sessionType !== 'work') {
         setState(s => ({
             ...s,
             isActive: false,

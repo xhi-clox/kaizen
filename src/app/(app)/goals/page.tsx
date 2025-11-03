@@ -197,28 +197,6 @@ function DailyGoals() {
 
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
-  const todaysGoal = goals.daily.find(g => g.date === todayStr);
-
-  const form = useForm<z.infer<typeof dailyGoalSchema>>({
-    resolver: zodResolver(dailyGoalSchema),
-    defaultValues: todaysGoal || { date: todayStr, studyHours: 6, topicsToComplete: 3, completed: false },
-  });
-  
-  useEffect(() => {
-    form.reset(todaysGoal || { date: todayStr, studyHours: 6, topicsToComplete: 3, completed: false });
-  }, [todaysGoal, form, todayStr]);
-
-  const onSubmit = (data: z.infer<typeof dailyGoalSchema>) => {
-    const updatedDailyGoals = goals.daily.filter(g => g.date !== data.date);
-    setGoals({ ...goals, daily: [...updatedDailyGoals, data] });
-    setOpen(false);
-  };
-  
-  const toggleGoalCompletion = (goal: DailyGoal) => {
-    const updatedGoal = { ...goal, completed: !goal.completed };
-    const updatedDailyGoals = goals.daily.map(g => g.date === goal.date ? updatedGoal : g);
-    setGoals({ ...goals, daily: updatedDailyGoals });
-  };
   
   const { actualHours, actualTopics } = useMemo(() => {
     const todaySessions = sessions.filter(s => isSameDay(new Date(s.date), today));
@@ -231,8 +209,56 @@ function DailyGoals() {
     return { actualHours: hours, actualTopics: completedTopicIds.length };
   }, [sessions, progress, today]);
 
-  const hoursProgress = todaysGoal ? (actualHours / todaysGoal.studyHours) * 100 : 0;
-  const topicsProgress = todaysGoal ? (actualTopics / todaysGoal.topicsToComplete) * 100 : 0;
+  const todaysGoal = useMemo(() => {
+      const goal = goals.daily.find(g => g.date === todayStr);
+      if (goal) {
+          return {...goal, actualHours, actualTopics};
+      }
+      return {
+          date: todayStr,
+          studyHours: 6,
+          topicsToComplete: 3,
+          completed: false,
+          actualHours,
+          actualTopics
+      }
+  }, [goals.daily, todayStr, actualHours, actualTopics]);
+
+  const form = useForm<z.infer<typeof dailyGoalSchema>>({
+    resolver: zodResolver(dailyGoalSchema),
+    defaultValues: {
+        date: todaysGoal.date,
+        studyHours: todaysGoal.studyHours,
+        topicsToComplete: todaysGoal.topicsToComplete,
+        completed: todaysGoal.completed
+    },
+  });
+  
+  useEffect(() => {
+    form.reset({
+        date: todaysGoal.date,
+        studyHours: todaysGoal.studyHours,
+        topicsToComplete: todaysGoal.topicsToComplete,
+        completed: todaysGoal.completed
+    });
+  }, [todaysGoal, form]);
+
+  const onSubmit = (data: z.infer<typeof dailyGoalSchema>) => {
+    const updatedDailyGoals = goals.daily.filter(g => g.date !== data.date);
+    // When saving, don't include actuals
+    const { actualHours, actualTopics, ...goalToSave} = todaysGoal;
+    setGoals({ ...goals, daily: [...updatedDailyGoals, { ...goalToSave, ...data }] });
+    setOpen(false);
+  };
+  
+  const toggleGoalCompletion = (goal: DailyGoal) => {
+    const updatedGoal = { ...goal, completed: !goal.completed };
+    const updatedDailyGoals = goals.daily.map(g => g.date === goal.date ? updatedGoal : g);
+    setGoals({ ...goals, daily: updatedDailyGoals });
+  };
+  
+  const hoursProgress = todaysGoal.studyHours > 0 ? (todaysGoal.actualHours / todaysGoal.studyHours) * 100 : 0;
+  const topicsProgress = todaysGoal.topicsToComplete > 0 ? (todaysGoal.actualTopics / todaysGoal.topicsToComplete) * 100 : 0;
 
   return (
     <Card>
@@ -279,11 +305,11 @@ function DailyGoals() {
                     </label>
                 </div>
                 <div>
-                    <div className="flex justify-between mb-1"><span className="font-medium">Study Hours</span><span>{actualHours.toFixed(1)} / {todaysGoal.studyHours}h</span></div>
+                    <div className="flex justify-between mb-1"><span className="font-medium">Study Hours</span><span>{todaysGoal.actualHours.toFixed(1)} / {todaysGoal.studyHours}h</span></div>
                     <Progress value={hoursProgress} />
                 </div>
                  <div>
-                    <div className="flex justify-between mb-1"><span className="font-medium">Topics Completed</span><span>{actualTopics} / {todaysGoal.topicsToComplete}</span></div>
+                    <div className="flex justify-between mb-1"><span className="font-medium">Topics Completed</span><span>{todaysGoal.actualTopics} / {todaysGoal.topicsToComplete}</span></div>
                     <Progress value={topicsProgress} />
                 </div>
             </>

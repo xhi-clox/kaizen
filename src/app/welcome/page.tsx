@@ -45,11 +45,14 @@ const FormSchema = z.object({
   }),
 });
 
+type StartType = 'quick' | 'fresh';
+
 export default function WelcomePage() {
   const router = useRouter();
   const { setupQuickStart, setupFreshStart } = useAppData();
   const { toast } = useToast();
-  const [loading, setLoading] = useState<null | 'quick' | 'fresh'>(null);
+  const [loading, setLoading] = useState<StartType | null>(null);
+  const [startType, setStartType] = useState<StartType>('quick');
   const [isClient, setIsClient] = useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -65,31 +68,28 @@ export default function WelcomePage() {
     form.setValue('examDate', new Date(new Date().setMonth(new Date().getMonth() + 6)));
   }, [form]);
 
+  function onSubmit(values: z.infer<typeof FormSchema>) {
+    setLoading(startType);
+    const dateString = format(values.examDate, 'yyyy-MM-dd');
 
-  function handleQuickStart(values: z.infer<typeof FormSchema>) {
-    setLoading('quick');
-    const dateString = format(values.examDate, 'yyyy-MM-dd');
-    setupQuickStart(values.name, dateString);
-    toast({
-        title: 'Welcome to HSC Success Planner!',
-        description: "We've set up some sample data for you.",
-    });
+    if (startType === 'quick') {
+        setupQuickStart(values.name, dateString);
+        toast({
+            title: 'Welcome to HSC Success Planner!',
+            description: "We've set up some sample data for you.",
+        });
+    } else {
+        setupFreshStart(values.name, dateString);
+        toast({
+            title: 'Welcome to HSC Success Planner!',
+            description: "Your new study plan is ready.",
+        });
+    }
+    
     router.push('/dashboard');
     setLoading(null);
   }
-  
-  function handleFreshStart(values: z.infer<typeof FormSchema>) {
-    setLoading('fresh');
-    const dateString = format(values.examDate, 'yyyy-MM-dd');
-    setupFreshStart(values.name, dateString);
-    toast({
-        title: 'Welcome to HSC Success Planner!',
-        description: "Your new study plan is ready.",
-    });
-    router.push('/dashboard');
-    setLoading(null);
-  }
-  
+
   if (!isClient) {
     return null;
   }
@@ -110,7 +110,7 @@ export default function WelcomePage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
                 name="name"
@@ -167,8 +167,8 @@ export default function WelcomePage() {
               />
               <div className="flex flex-col space-y-2 pt-4">
                 <Button 
-                    type="button" 
-                    onClick={form.handleSubmit(handleQuickStart)}
+                    type="submit" 
+                    onClick={() => setStartType('quick')}
                     disabled={!!loading || !form.formState.isValid}
                     className="w-full"
                 >
@@ -176,8 +176,8 @@ export default function WelcomePage() {
                   {loading === 'quick' ? 'Setting up...' : 'Quick Start with Sample Data'}
                 </Button>
                  <Button 
-                    type="button" 
-                    onClick={form.handleSubmit(handleFreshStart)}
+                    type="submit" 
+                    onClick={() => setStartType('fresh')}
                     variant="secondary"
                     disabled={!!loading || !form.formState.isValid}
                     className="w-full"

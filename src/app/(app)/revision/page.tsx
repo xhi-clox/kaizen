@@ -1,6 +1,6 @@
 'use client';
 
-import { useSubjects, useSettings, useStudySessions } from '@/hooks/use-app-data';
+import { useSubjects, useSettings, useStudySessions, useProgress } from '@/hooks/use-app-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BrainCircuit, Repeat, ArrowRight } from 'lucide-react';
@@ -12,7 +12,7 @@ import Link from 'next/link';
 
 export default function RevisionPage() {
   const [subjects] = useSubjects();
-  const [settings] = useSettings();
+  const [progress] = useProgress();
   const [sessions] = useStudySessions();
   const { toast } = useToast();
 
@@ -20,7 +20,7 @@ export default function RevisionPage() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const allTopics = useMemo(() => {
-    if (!subjects || !sessions) return [];
+    if (!subjects || !sessions || !progress) return [];
     return subjects.flatMap(subject => 
         subject.chapters.flatMap(chapter => 
             chapter.topics.map(topic => {
@@ -28,21 +28,27 @@ export default function RevisionPage() {
                     .filter(s => s.topicId === topic.id && s.sessionType === 'revision')
                     .sort((a,b) => b.date - a.date)[0];
                 
+                const topicProgress = progress[topic.id] || { 
+                    status: 'not-started', 
+                    priority: 'medium', 
+                    difficulty: null,
+                };
+                
                 return {
                     topicId: topic.id,
                     topicName: topic.name,
                     subjectId: subject.id,
                     subjectName: subject.name,
-                    difficulty: topic.difficulty,
-                    status: topic.status,
+                    difficulty: topicProgress.difficulty,
+                    status: topicProgress.status,
                     lastRevisedDate: lastSession ? new Date(lastSession.date).toISOString() : null,
                     timesRevised: sessions.filter(s => s.topicId === topic.id && s.sessionType === 'revision').length,
-                    priority: topic.priority,
-                } as RevisionTopic
+                    priority: topicProgress.priority,
+                } as RevisionTopic;
             })
         )
     );
-  }, [subjects, sessions]);
+  }, [subjects, sessions, progress]);
 
   const handleGenerateQueue = async () => {
     setIsGenerating(true);

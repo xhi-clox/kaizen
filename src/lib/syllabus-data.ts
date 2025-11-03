@@ -13,14 +13,13 @@ const createChapters = (chapters: { name: string; topics: string[] }[]) =>
     topics: createTopics(chapter.topics),
   }));
 
-const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
+const subjects: Omit<Subject, 'id' | 'totalChapters' | 'order'>[] = [
   // 1. Bangla 1st Paper
   {
     name: 'Bangla 1st Paper',
     color: '#D32F2F',
-    order: 1,
     chapters: createChapters([
-      { name: 'গদ্য (Godyo)', topics: ['অপরিচিতা', 'বিলাসী', 'আমার পথ', 'মানব-কল্যাণ', 'মাসি-পিসি', 'বায়ান্নর দিনগুলো', 'রেইনকোট', 'মহাজাগতিক ക്യുರೇಟರ್', 'নেকলেস', 'ঐקתান'] },
+      { name: 'গদ্য (Godyo)', topics: ['অপরিচিতা', 'বিলাসী', 'আমার পথ', 'মানব-কল্যাণ', 'মাসি-পিসি', 'বায়ান্নর দিনগুলো', 'রেইনকোট', 'মহাজাগতিক ക്യുರೇಟರ್', 'নেকলেস', 'ঐকতান'] },
       { name: 'পদ্য (Podyo)', topics: ['বিভীষণের প্রতি মেঘনাদ', 'সোনার তরী', ' विद्रोहী', 'প্রতিদান', 'تازমহল', 'সেই অস্ত্র', 'ফেব্রুয়ারি ১৯৬৯', 'আমি কিংবদন্তির কথা বলছি', 'নورালদীনের কথা মনে পড়ে যায়', 'ছবি'] },
       { name: 'উপন্যাস (Uponnash)', topics: ['লালসালু'] },
       { name: 'নাটক (Natok)', topics: ['সিরাজউদ্দৌলা'] },
@@ -30,7 +29,6 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   {
     name: 'Bangla 2nd Paper',
     color: '#C2185B',
-    order: 2,
     chapters: createChapters([
         { name: 'ব্যাকরণ (Byakoron)', topics: ['বাংলা উচ্চারণের নিয়ম', 'বাংলা বানানের নিয়ম', 'বাংলা ভাষার ব্যাকরণিক শব্দश्रेণি', ' উপসর্গ, প্রত্যয় ও समास', ' वाक्यতত্ত্ব', 'বাংলা ভাষার অপপ্রয়োগ ও শুদ্ধ প্রয়োগ'] },
         { name: 'নির্মিতি (Nirmiti)', topics: ['पारিভাষিক শব্দ ও অনুবাদ', 'দিনলিপি লিখন', 'বৈദ്യুতিক চিঠি', 'भाषण রচনা', 'প্রতিবেদন রচনা', 'สารাংশ লিখন'] },
@@ -40,7 +38,6 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   {
     name: 'English 1st Paper',
     color: '#7B1FA2',
-    order: 3,
     chapters: createChapters([
       { name: 'Unit-1: People or Institutions Making History', topics: ["The Unforgettable History", "Nelson Mandela, from Apartheid Fighter to President", "Two Women"] },
       { name: 'Unit-2: Greatest Scientific Achievements', topics: ["The Scientific Breakthroughs We Are Waiting For", "Tribute to a Great Scientist"] },
@@ -49,7 +46,7 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
       { name: 'Unit-5: Adolescence', topics: ["The Storm and Stress of Adolescence", "Why Does a Child Hate School?"] },
       { name: 'Unit-6: The Art of Living', topics: ["The Art of Living", "What is Art?"] },
       { name: 'Unit-7: Environment and Nature', topics: ["Water, Water Everywhere", "Threats to Tigers"] },
-      { name": 'Unit-8: Human Rights', topics: ["Are We Aware of Our Rights?", "Rights of the Child"] },
+      { name: 'Unit-8: Human Rights', topics: ["Are We Aware of Our Rights?", "Rights of the Child"] },
       { name: 'Unit-9: Diaspora', topics: ["What is Diaspora?", "Bangladeshi Diaspora"] },
       { name: 'Unit-10: Peace and Conflict', topics: ["What is Peace?", "The Art of War"] },
       { name: 'Unit-11: Tours and Travels', topics: ["Travelling to a Village in Bangladesh", "The Wonders of the World"] },
@@ -60,7 +57,6 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   {
     name: 'English 2nd Paper',
     color: '#512DA8',
-    order: 4,
     chapters: createChapters([
       { name: 'Grammar Part A', topics: ['Articles', 'Prepositions', 'Special Uses of words/phrases', 'Completing Sentences', 'Right form of Verbs', 'Narration', 'Pronoun Reference', 'Modifiers', 'Connectors', 'Synonyms & Antonyms', 'Punctuation'] },
       { name: 'Composition Part B', topics: ['Formal Letter/Email Writing', 'Report Writing', 'Paragraph Writing', 'Free Writing'] },
@@ -70,7 +66,6 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   {
     name: 'Information and Communication Technology (ICT)',
     color: '#303F9F',
-    order: 5,
     chapters: createChapters([
       { name: 'Chapter 1: Information and Communication Technology: World and Bangladesh Perspective', topics: ['Concept of World Village', 'Virtual Reality', 'Artificial Intelligence', 'Robotics', 'Cryosurgery', 'Biometrics', 'Bioinformatics', 'Genetic Engineering', 'Nanotechnology'] },
       { name: 'Chapter 2: Communication Systems and Networking', topics: ['Communication Systems', 'Data Transmission', 'Network Concepts', 'Network Devices', 'Cloud Computing'] },
@@ -84,7 +79,6 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   {
     name: 'Physics 1st Paper',
     color: '#0288D1',
-    order: 6,
     chapters: createChapters([
       { name: 'Chapter 1: Physical World and Measurement', topics: ['Fundamental and Derived Quantities', 'Units and Dimensions', 'Errors in Measurement', 'Vernier Scale and Screw Gauge'] },
       { name: 'Chapter 2: Vectors', topics: ['Scalar and Vector Quantities', 'Vector Addition and Subtraction', 'Resolution of Vectors', 'Dot and Cross Product', 'Vector Calculus (Gradient, Divergence, Curl)'] },
@@ -102,7 +96,6 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   {
     name: 'Physics 2nd Paper',
     color: '#0097A7',
-    order: 7,
     chapters: createChapters([
       { name: 'Chapter 1: Thermodynamics', topics: ['Thermal Properties of Matter', 'Zeroth, First and Second Law of Thermodynamics', 'Entropy', 'Carnot Engine', 'Refrigerator'] },
       { name: 'Chapter 2: Static Electricity', topics: ['Charge', 'Coulomb\'s Law', 'Electric Field and Potential', 'Gauss\'s Law', 'Capacitors and Capacitance'] },
@@ -120,7 +113,6 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   {
     name: 'Chemistry 1st Paper',
     color: '#F57C00',
-    order: 8,
     chapters: createChapters([
       { name: 'Chapter 1: Laboratory Safety Procedures', topics: ['Lab safety rules', 'Use of chemical substances', 'First aid'] },
       { name: 'Chapter 2: Qualitative Chemistry', topics: ['Concept of mole', 'Stoichiometry', 'Concentration of solutions', 'Titration', 'Principles of qualitative analysis'] },
@@ -133,7 +125,6 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   {
     name: 'Chemistry 2nd Paper',
     color: '#E64A19',
-    order: 9,
     chapters: createChapters([
       { name: 'Chapter 1: Environmental Chemistry', topics: ['Gases and their properties', 'Acid rain', 'Greenhouse effect', 'Ozone layer depletion', 'Water pollution and treatment'] },
       { name: 'Chapter 2: Organic Chemistry', topics: ['Classification and nomenclature', 'Isomerism', 'Alkanes, Alkenes, Alkynes', 'Aromatic compounds (Benzene)', 'Alcohols, Phenols, Ethers', 'Aldehydes and Ketones', 'Carboxylic acids', 'Amines', 'Polymers'] },
@@ -146,7 +137,6 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   {
     name: 'Biology 1st Paper',
     color: '#388E3C',
-    order: 10,
     chapters: createChapters([
       { name: 'Chapter 1: Cell and its Structure', topics: ['Cell theory', 'Prokaryotic and Eukaryotic cells', 'Cell organelles', 'Cell division (Mitosis, Meiosis)'] },
       { name: 'Chapter 2: Cell Division', topics: ['Amitosis', 'Mitosis', 'Meiosis', 'Significance of cell division'] },
@@ -165,12 +155,11 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   {
     name: 'Biology 2nd Paper',
     color: '#689F38',
-    order: 11,
     chapters: createChapters([
       { name: 'Chapter 1: Animal Diversity and Classification', topics: ['Basis of classification', 'Major phyla of Animalia', 'Chordates'] },
       { name: 'Chapter 2: Introduction to Animals', topics: ['Cockroach', 'Rui fish', 'Hydra'] },
       { name: 'Chapter 3: Digestion and Absorption', topics: ['Human digestive system', 'Process of digestion and absorption'] },
-      { name'Chapter 4: Respiration and Gas Exchange', topics: ['Human respiratory system', 'Mechanism of breathing', 'Gas exchange'] },
+      { name: 'Chapter 4: Respiration and Gas Exchange', topics: ['Human respiratory system', 'Mechanism of breathing', 'Gas exchange'] },
       { name: 'Chapter 5: Circulation', topics: ['Human circulatory system', 'Blood and its components', 'Heart structure and function', 'Blood groups'] },
       { name: 'Chapter 6: Excretion and Osmoregulation', topics: ['Human excretory system', 'Structure and function of kidney', 'Urine formation'] },
       { name: 'Chapter 7: Locomotion and Movement', topics: ['Human skeletal system', 'Muscles and their function', 'Joints'] },
@@ -184,7 +173,6 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   {
     name: 'Higher Math 1st Paper',
     color: '#6A1B9A',
-    order: 12,
     chapters: createChapters([
       { name: 'Chapter 1: Matrices and Determinants', topics: ['Matrices', 'Determinants', 'Inverse of a matrix', 'Solving linear equations'] },
       { name: 'Chapter 2: Vectors', topics: ['Vector algebra', 'Scalar and vector products', 'Applications of vectors'] },
@@ -202,14 +190,13 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   {
     name: 'Higher Math 2nd Paper',
     color: '#4527A0',
-    order: 13,
     chapters: createChapters([
       { name: 'Chapter 1: Real Numbers and Inequalities', topics: ['Properties of real numbers', 'Inequalities'] },
       { name: 'Chapter 2: Linear Programming', topics: ['Formulation and graphical solution of LPP'] },
       { name: 'Chapter 3: Complex Numbers', topics: ['Argand diagram', 'Modulus and argument', 'De Moivre\'s theorem'] },
       { name: 'Chapter 4: Polynomials and Polynomial Equations', topics: ['Remainder theorem', 'Factor theorem', 'Roots of equations'] },
       { name: 'Chapter 5: Binomial Expansion', topics: ['Binomial theorem for any index'] },
-      { name: tóChapter 6: Conics', topics: ['Parabola', 'Ellipse', 'Hyperbola'] },
+      { name: 'Chapter 6: Conics', topics: ['Parabola', 'Ellipse', 'Hyperbola'] },
       { name: 'Chapter 7: Inverse Trigonometric Functions and Equations', topics: ['Properties and graphs', 'Solving equations'] },
       { name: 'Chapter 8: Statics', topics: ['Forces in equilibrium', 'Moments', 'Couples'] },
       { name: 'Chapter 9: Dynamics', topics: ['Motion in a straight line', 'Projectiles', 'SHM'] },
@@ -218,8 +205,30 @@ const subjects: Omit<Subject, 'id' | 'totalChapters'>[] = [
   },
 ];
 
+const subjectOrder = [
+    'Bangla 1st Paper',
+    'Bangla 2nd Paper',
+    'English 1st Paper',
+    'English 2nd Paper',
+    'Information and Communication Technology (ICT)',
+    'Physics 1st Paper',
+    'Physics 2nd Paper',
+    'Chemistry 1st Paper',
+    'Chemistry 2nd Paper',
+    'Biology 1st Paper',
+    'Biology 2nd Paper',
+    'Higher Math 1st Paper',
+    'Higher Math 2nd Paper'
+];
 
-export const NCTB_HSC_SYLLABUS: Subject[] = subjects.map(subject => {
+// Add order to subjects based on the defined order
+const orderedSubjects = subjects.map(s => {
+    const order = subjectOrder.indexOf(s.name) + 1;
+    return { ...s, order: order || Infinity };
+}).sort((a, b) => a.order - b.order);
+
+
+export const NCTB_HSC_SYLLABUS: Subject[] = orderedSubjects.map(subject => {
     const chapters = subject.chapters;
     return {
         ...subject,

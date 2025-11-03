@@ -350,12 +350,12 @@ export default function StudySessionPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Session Complete!</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Great work! Do you want to mark this topic as completed?
+                    Great work! How did you feel about that topic?
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => handleUpdateTopicStatus(false)}>Not yet</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleUpdateTopicStatus(true)}>Yes, mark as complete</AlertDialogAction>
+                <AlertDialogCancel onClick={() => handleUpdateTopicStatus(false)}>Need more time to finish this</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleUpdateTopicStatus(true)}>Mark the topic as completed</AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser } from '@/firebase/auth/use-user';
@@ -27,7 +28,7 @@ export const useProfile = () => {
     const { user, loading: userLoading } = useUser();
     const { firestore } = useFirebase();
 
-    const userDocRef = user ? doc(firestore, 'users', user.uid) : null;
+    const userDocRef = useMemo(() => user ? doc(firestore, 'users', user.uid) : null, [user, firestore]);
     const { data: profile, loading: profileLoading, set } = useDoc<UserProfile>(userDocRef);
 
     return [profile ?? defaultProfile, set, userLoading || profileLoading] as const;
@@ -44,7 +45,7 @@ export const useSubjects = () => {
 export const useGoals = () => {
     const { user } = useUser();
     const { firestore } = useFirebase();
-    const goalsDocRef = user ? doc(firestore, 'users', user.uid, 'data', 'goals') : null;
+    const goalsDocRef = useMemo(() => user ? doc(firestore, 'users', user.uid, 'data', 'goals') : null, [user, firestore]);
     const { data, loading, set } = useDoc<Goals>(goalsDocRef);
     
     return [data ?? defaultGoals, set, loading] as const;
@@ -61,7 +62,7 @@ export const useStudySessions = () => {
 export const useRoutine = () => {
     const { user } = useUser();
     const { firestore } = useFirebase();
-    const routineDocRef = user ? doc(firestore, 'users', user.uid, 'data', 'routine') : null;
+    const routineDocRef = useMemo(() => user ? doc(firestore, 'users', user.uid, 'data', 'routine') : null, [user, firestore]);
     const { data, loading, set } = useDoc<Routine>(routineDocRef);
 
     return [data ?? defaultRoutine, set, loading] as const;
@@ -70,7 +71,7 @@ export const useRoutine = () => {
 export const useSettings = () => {
     const { user } = useUser();
     const { firestore } = useFirebase();
-    const settingsDocRef = user ? doc(firestore, 'users', user.uid, 'data', 'settings') : null;
+    const settingsDocRef = useMemo(() => user ? doc(firestore, 'users', user.uid, 'data', 'settings') : null, [user, firestore]);
     const { data, loading, set } = useDoc<Settings>(settingsDocRef);
     return [data ?? defaultSettings, set, loading] as const;
 }

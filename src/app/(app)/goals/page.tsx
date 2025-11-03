@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useGoals, useProfile, useSubjects, useStudySessions } from '@/hooks/use-app-data';
+import { useGoals, useProfile, useSubjects, useStudySessions, useProgress } from '@/hooks/use-app-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -575,3 +576,5 @@ export default function GoalsPage() {
     </div>
   );
 }
+
+    

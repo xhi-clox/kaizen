@@ -106,9 +106,9 @@ export default function ProgressPage() {
             <CardDescription>Your progress in each subject.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{}} className="h-64">
+            <ChartContainer config={{}} className="h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 10, right: 30 }}>
+                <BarChart data={subjectProgressData} layout="vertical" margin={{ left: 120, right: 30 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} unit="%" />
                   <YAxis type="category" dataKey="name" width={80} tickLine={false} axisLine={false} />
@@ -125,7 +125,7 @@ export default function ProgressPage() {
             <CardDescription>Your daily study time for the current week.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={{ hours: { label: 'Hours', color: 'hsl(var(--primary))'}}} className="h-64">
+            <ChartContainer config={{ hours: { label: 'Hours', color: 'hsl(var(--primary))'}}} className="h-96">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={weeklyStudyData}>
                         <CartesianGrid vertical={false} />
